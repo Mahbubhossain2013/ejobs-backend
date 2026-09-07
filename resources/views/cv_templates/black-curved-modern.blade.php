@@ -24,7 +24,7 @@
             z-index: 1;
         }
 
-        .left-col { width: 44%; background: #000; color: #fff; padding: 32px 24px; position: relative; z-index: 2; display: flex; flex-direction: column; gap: 20px; border-right: 1px solid #27272a; }
+        .left-col { width: 44%; background: #000; color: #fff; padding: 32px 24px; position: relative; z-index: 2; display: flex; flex-direction: column; gap: 20px; border-right: 1px solid #27272a; align-self: stretch; min-height: 100%; }
         .photo-frame { width: 140px; height: 140px; margin: 0 auto 6px; border: 4px solid #52525b; padding: 4px; background: #000; box-shadow: 0 10px 25px rgba(0,0,0,0.8); }
         .photo-frame img { width: 100%; height: 100%; object-fit: cover; }
         .photo-init { width: 100%; height: 100%; background: #27272a; display: flex; align-items: center; justify-content: center; font-size: 46px; font-weight: 800; color: #fff; font-family: 'Montserrat', sans-serif; }

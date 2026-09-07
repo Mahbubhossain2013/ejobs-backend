@@ -12,7 +12,7 @@
         .cv-page { width: 210mm; min-height: auto; margin: 0 auto; background: #fff; display: flex;     align-items: stretch;
         }
         @media print { body { background: #fff; } .cv-page { width: 100%; min-height: auto; } }
-        .side { width: 34%; background: var(--navy); color: #fff; padding: 26px 18px; display: flex; flex-direction: column; gap: 16px; }
+        .side { width: 34%; background: var(--navy); color: #fff; padding: 26px 18px; display: flex; flex-direction: column; gap: 16px; align-self: stretch; min-height: 100%; }
         .main { flex: 1; padding: 26px 26px; display: flex; flex-direction: column; gap: 16px; }
         .gold-badge { background: var(--gold); color: #000; padding: 10px 16px; border-radius: 6px; margin-bottom: 12px; }
         .sec-title { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0f172a; border-bottom: 2px solid var(--gold); padding-bottom: 3px; margin-bottom: 8px; }

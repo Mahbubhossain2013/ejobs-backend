@@ -8,12 +8,41 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: #262626; color: #111; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         body { overflow: visible !important; }
-        .cv-page { width: 210mm; min-height: auto; height: auto; margin: 0 auto; background: #fff; display: flex;     align-items: stretch;
+        .cv-page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: linear-gradient(to right, #383e45 38%, #ffffff 38%);
+            display: flex;
+            align-items: stretch;
         }
-        @media print { body { background: #fff; } .cv-page { width: 100%; min-height: auto; height: auto; page-break-after: auto; } }
+        @media print {
+            html, body {
+                background: linear-gradient(to right, #383e45 38%, #ffffff 38%) !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .cv-page {
+                width: 100%;
+                min-height: 297mm;
+                margin: 0;
+                background: linear-gradient(to right, #383e45 38%, #ffffff 38%) !important;
+                box-shadow: none;
+            }
+        }
 
         /* Left Column (Dark Slate #383e45) */
-        .left-col { width: 38%; background: #383e45; color: #fff; padding: 32px 20px; display: flex; flex-direction: column; gap: 20px; }
+        .left-col {
+            width: 38%;
+            background: #383e45;
+            color: #fff;
+            padding: 32px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-self: stretch;
+            min-height: 100%;
+        }
         
         .avatar-wrap { width: 130px; height: 130px; border-radius: 50%; border: 4px solid #fff; margin: 0 auto 12px; overflow: hidden; background: #1c1917; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }

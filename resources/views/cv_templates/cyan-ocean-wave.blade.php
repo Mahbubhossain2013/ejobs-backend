@@ -24,10 +24,10 @@
         .avatar-init { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 46px; font-weight: 800; color: #00a8e8; }
 
         /* Body Split */
-        .body-split { display: grid; grid-template-columns: 210px 1fr; flex: 1; }
+        .body-split { display: grid; grid-template-columns: 210px 1fr; flex: 1; min-height: 100%; align-items: stretch; }
 
         /* Left Column (Ocean Blue) */
-        .left-col { background: #003b64; color: #fff; padding: 36px 18px 24px; display: flex; flex-direction: column; gap: 20px; }
+        .left-col { background: #003b64; color: #fff; padding: 36px 18px 24px; display: flex; flex-direction: column; gap: 20px; min-height: 100%; align-self: stretch; }
         .sec-cyan-title { font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 800; letter-spacing: 1.5px; color: #fff; text-transform: uppercase; display: flex; align-items: center; gap: 6px; border-bottom: 2px solid #00a8e8; padding-bottom: 4px; margin-bottom: 10px; }
 
         .contact-item { display: flex; align-items: center; gap: 8px; font-size: 9.5px; color: #e0f2fe; margin-bottom: 8px; word-break: break-all; }

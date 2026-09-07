@@ -8,12 +8,42 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: #262626; color: #111; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         body { overflow: visible !important; }
-        .cv-page { width: 210mm; min-height: auto; height: auto; margin: 0 auto; background: #fff; display: flex;     align-items: stretch;
+        .cv-page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: linear-gradient(to right, #6b7280 38%, #ffffff 38%);
+            display: flex;
+            align-items: stretch;
         }
-        @media print { body { background: #fff; } .cv-page { width: 100%; min-height: auto; height: auto; page-break-after: auto; } }
+        @media print {
+            html, body {
+                background: linear-gradient(to right, #6b7280 38%, #ffffff 38%) !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .cv-page {
+                width: 100%;
+                min-height: 297mm;
+                margin: 0;
+                background: linear-gradient(to right, #6b7280 38%, #ffffff 38%) !important;
+                box-shadow: none;
+            }
+        }
 
         /* Left Column with Arch Pillar */
-        .left-col { width: 38%; background: #6b7280; color: #fff; padding: 24px 18px; display: flex; flex-direction: column; gap: 16px; position: relative; }
+        .left-col {
+            width: 38%;
+            background: #6b7280;
+            color: #fff;
+            padding: 24px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: relative;
+            align-self: stretch;
+            min-height: 100%;
+        }
         
         .arch-top { background: #9ca3af; border-top-left-radius: 90px; border-top-right-radius: 90px; padding: 18px 12px 14px; text-align: center; margin-bottom: 4px; }
         .avatar-circle { width: 110px; height: 110px; border-radius: 50%; border: 3px solid #fff; overflow: hidden; background: #111; margin: 0 auto; }
