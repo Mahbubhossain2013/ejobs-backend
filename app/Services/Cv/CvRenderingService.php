@@ -15,19 +15,20 @@ class CvRenderingService
     public function render(CvTemplate $template, array $data, array $themeSettings = []): string
     {
         try {
+            $viewName = "cv_templates.{$template->slug}";
+            $viewFile = str_replace('.', '/', $viewName);
+            $viewPath = resource_path("views/{$viewFile}.blade.php");
+
+            if (view()->exists($viewName) || file_exists($viewPath)) {
+                $html = view($viewName, $this->buildViewData($data, $themeSettings))->render();
+                return $this->ensureSignatureBlock($html, $data);
+            }
+
             $html = $template->html_content;
             $css = $template->css_content;
 
             if (empty($html)) {
-                $viewName = "cv_templates.{$template->slug}";
-                $viewFile = str_replace('.', '/', $viewName);
-                $viewPath = resource_path("views/{$viewFile}.blade.php");
-                if (view()->exists($viewName) || file_exists($viewPath)) {
-                    $html = view($viewName, $this->buildViewData($data, $themeSettings))->render();
-                    return $this->ensureSignatureBlock($html, $data);
-                } else {
-                    return $this->errorFallback("The template '{$template->name}' does not have any rendering code initialized.");
-                }
+                return $this->errorFallback("The template '{$template->name}' does not have any rendering code initialized.");
             }
 
             $this->validateSecurity($html);
@@ -66,13 +67,13 @@ class CvRenderingService
         $signatureUrl = !empty($personal['signature_url']) ? htmlspecialchars($personal['signature_url'], ENT_QUOTES, 'UTF-8') : null;
 
         if ($signatureUrl) {
-            $sigGraphic = "<div style=\"height: 42px; margin-bottom: 4px; display: flex; align-items: flex-end; justify-content: center;\"><img src=\"{$signatureUrl}\" alt=\"Signature\" style=\"max-height: 40px; max-width: 160px; object-fit: contain;\" /></div>";
+            $sigGraphic = "<div style=\"height: 40px; margin-bottom: 4px; display: flex; align-items: flex-end; justify-content: center;\"><img src=\"{$signatureUrl}\" alt=\"Signature\" style=\"max-height: 38px; max-width: 150px; object-fit: contain;\" /></div>";
         } else {
-            $sigGraphic = "<div style=\"height: 38px;\"></div>";
+            $sigGraphic = "<div style=\"height: 35px;\"></div>";
         }
 
         $signatureHtml = <<<HTML
-<div class="cv-signature-section" style="margin-top: 35px; padding-top: 20px; display: flex; justify-content: flex-end; page-break-inside: avoid !important; break-inside: avoid !important; width: 100%;">
+<div class="cv-signature-section" style="margin-top: 24px; padding-top: 8px; display: flex; justify-content: flex-end; page-break-inside: avoid !important; break-inside: avoid !important; width: 100%;">
     <div style="text-align: center; min-width: 190px; display: inline-block;">
         {$sigGraphic}
         <div style="border-top: 1.5px solid #334155; width: 180px; margin: 0 auto 5px auto;"></div>
@@ -82,9 +83,9 @@ class CvRenderingService
 </div>
 HTML;
 
-        // 1. In 2-column templates, inject before the closing tags of .main-content / .content-right / .col-right
-        if (preg_match('/(<div[^>]*class=[\'"][^\'"]*(?:main-content|content-right|right-column|col-right|main_column|content-main)[^\'"]*[\'"][^>]*>[\s\S]*?)(<\/div>\s*<\/div>)/i', $html)) {
-            return preg_replace('/(<div[^>]*class=[\'"][^\'"]*(?:main-content|content-right|right-column|col-right|main_column|content-main)[^\'"]*[\'"][^>]*>[\s\S]*?)(<\/div>\s*<\/div>)/i', "$1\n{$signatureHtml}\n$2", $html, 1);
+        // 1. In 2-column templates, inject before the closing tags of .main-content / .content-right / .col-right / .right-col / .right-panel / .main
+        if (preg_match('/(<div[^>]*class=[\'"][^\'"]*(?:main-content|content-right|right-column|col-right|main_column|content-main|right-panel|main-panel|right-col|main)[^\'"]*[\'"][^>]*>[\s\S]*?)(<\/div>\s*<\/div>)/i', $html)) {
+            return preg_replace('/(<div[^>]*class=[\'"][^\'"]*(?:main-content|content-right|right-column|col-right|main_column|content-main|right-panel|main-panel|right-col|main)[^\'"]*[\'"][^>]*>[\s\S]*?)(<\/div>\s*<\/div>)/i', "$1\n{$signatureHtml}\n$2", $html, 1);
         }
 
         // 2. In single-column or generic templates, insert before the last </div> before </body>

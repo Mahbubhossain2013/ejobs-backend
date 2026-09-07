@@ -50,6 +50,8 @@
             display: flex;
             flex-direction: column;
             gap: 24px;
+            align-self: stretch;
+            min-height: 100%;
         }
         .sidebar-section h3 {
             font-size: 11px;
@@ -147,6 +149,7 @@
             display: flex;
             flex-direction: column;
             gap: 22px;
+            justify-content: flex-start;
         }
         .main-section h2 {
             font-size: 13px;
@@ -683,14 +686,14 @@
         @endif
 
         {{-- Signature Section --}}
-        <div class="cv-signature-section" style="margin-top: 35px; padding-top: 20px; display: flex; justify-content: flex-end; page-break-inside: avoid !important; break-inside: avoid !important; width: 100%;">
+        <div class="cv-signature-section" style="margin-top: 24px; padding-top: 8px; display: flex; justify-content: flex-end; page-break-inside: avoid !important; break-inside: avoid !important; width: 100%;">
             <div style="text-align: center; min-width: 190px; display: inline-block;">
                 @if(!empty($personal['signature_url']))
-                    <div style="height: 42px; margin-bottom: 4px; display: flex; align-items: flex-end; justify-content: center;">
-                        <img src="{{ $personal['signature_url'] }}" alt="Signature" style="max-height: 40px; max-width: 160px; object-fit: contain;" />
+                    <div style="height: 40px; margin-bottom: 4px; display: flex; align-items: flex-end; justify-content: center;">
+                        <img src="{{ $personal['signature_url'] }}" alt="Signature" style="max-height: 38px; max-width: 150px; object-fit: contain;" />
                     </div>
                 @else
-                    <div style="height: 38px;"></div>
+                    <div style="height: 35px;"></div>
                 @endif
                 <div style="border-top: 1.5px solid #334155; width: 180px; margin: 0 auto 5px auto;"></div>
                 <div style="font-size: 13px; font-weight: 700; color: var(--cv-text, #1e293b); letter-spacing: 0.3px;">{{ $candidate['full_name'] ?? $personal['full_name'] ?? 'Authorized Signature' }}</div>
