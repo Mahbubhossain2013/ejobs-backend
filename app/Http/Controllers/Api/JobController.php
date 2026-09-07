@@ -547,7 +547,7 @@ class JobController extends Controller
     public function popularSkills()
     {
         try {
-            $skills = \App\Models\Job::where('is_active', true)
+            $allSkills = \App\Models\Job::where('is_active', true)
                 ->whereNotNull('required_skills')
                 ->pluck('required_skills')
                 ->flatMap(function ($s) {
@@ -556,14 +556,16 @@ class JobController extends Controller
                     return is_array($decoded) ? $decoded : array_map('trim', explode(',', (string) $s));
                 })
                 ->filter(fn($s) => !empty($s) && is_string($s))
-                ->countValues()
-                ->sortDesc()
-                ->take(20)
-                ->keys();
+                ->values()
+                ->toArray();
+
+            $counted = array_count_values($allSkills);
+            arsort($counted);
+            $skills = array_keys(array_slice($counted, 0, 20, true));
 
             return response()->json([
                 'status' => true,
-                'data' => $skills->values()->toArray()
+                'data' => array_values($skills)
             ]);
         } catch (\Exception $e) {
             Log::error("popularSkills failed: " . $e->getMessage());
