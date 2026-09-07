@@ -9,14 +9,20 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Nunito Sans', sans-serif; background: #f1f5f9; color: var(--text); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         body { overflow: visible !important; }
-        .cv-page { width: 210mm; min-height: auto; margin: 0 auto; background: #fff; display: flex; flex-direction: column;     align-items: stretch;
+        @media print {
+            html, body {
+                background: linear-gradient(to right, var(--blue-light) 34%, #ffffff 34%) !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
         }
+        .cv-page { width: 210mm; min-height: auto; margin: 0 auto; background: #fff; display: flex; flex-direction: column; align-items: stretch; }
         @media print { body { background: #fff; } .cv-page { width: 100%; min-height: auto; } }
         .hero { background: linear-gradient(135deg, #1e3a8a, #2563eb); color: #fff; padding: 26px 30px; display: flex; justify-content: space-between; align-items: center; }
         .hero h1 { font-size: 26px; font-weight: 800; }
         .hero .title { font-size: 11px; opacity: 0.9; margin-top: 2px; }
-        .body-wrap { display: flex; flex: 1; }
-        .sidebar { width: 34%; background: var(--blue-light); padding: 22px 18px; display: flex; flex-direction: column; gap: 16px; border-right: 1px solid var(--blue-border); }
+        .body-wrap { display: flex; flex: 1; align-items: stretch; }
+        .sidebar { width: 34%; background: var(--blue-light); padding: 22px 18px; display: flex; flex-direction: column; gap: 16px; border-right: 1px solid var(--blue-border); align-self: stretch; min-height: 100%; }
         .main { flex: 1; padding: 24px 26px; display: flex; flex-direction: column; gap: 16px; }
         .sec-title { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--blue-dark); border-bottom: 2px solid var(--blue); padding-bottom: 3px; margin-bottom: 8px; }
         .ci { font-size: 9.5px; color: #334155; margin-bottom: 5px; word-break: break-all; }

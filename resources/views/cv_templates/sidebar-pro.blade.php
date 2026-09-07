@@ -19,14 +19,22 @@
             --cv-sidebar-muted: #94a3b8;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Inter', sans-serif;
-            color: var(--cv-text);
-            background: #f1f5f9;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
+        body { font-family: 'Inter', sans-serif; color: var(--cv-text); background: #f1f5f9; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         body { overflow: visible !important; }
+        /* ── Full-page sidebar background trick ──────────────────────────────
+           Paints the sidebar colour across the left 35% of every printed page
+           so the sidebar fill covers the entire page even when content is short.
+        ─────────────────────────────────────────────────────────────────────── */
+        @media print {
+            html, body {
+                background: linear-gradient(to right,
+                    var(--cv-sidebar-bg) 35%,
+                    #ffffff 35%
+                ) !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
         .cv-page {
             width: 210mm;
             min-height: auto;

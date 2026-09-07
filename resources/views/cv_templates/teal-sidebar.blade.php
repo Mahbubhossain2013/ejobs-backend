@@ -9,10 +9,16 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Open Sans', sans-serif; background: #e6f4f1; color: var(--text-dark); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         body { overflow: visible !important; }
-        .cv-page { width: 210mm; min-height: auto; margin: 0 auto; background: #fff; display: flex;     align-items: stretch;
+        @media print {
+            html, body {
+                background: linear-gradient(to right, var(--teal) 34%, #ffffff 34%) !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
         }
+        .cv-page { width: 210mm; min-height: auto; margin: 0 auto; background: #fff; display: flex; align-items: stretch; }
         @media print { body { background: #fff; } .cv-page { width: 100%; min-height: auto; } }
-        .sidebar { width: 34%; background: var(--teal); color: #fff; padding: 28px 20px; display: flex; flex-direction: column; gap: 18px; }
+        .sidebar { width: 34%; background: var(--teal); color: #fff; padding: 28px 20px; display: flex; flex-direction: column; gap: 18px; align-self: stretch; min-height: 100%; }
         .main { flex: 1; padding: 28px 26px; display: flex; flex-direction: column; gap: 18px; background: #fff; }
         .avatar { width: 88px; height: 88px; border-radius: 50%; border: 3px solid #fff; margin: 0 auto 12px; overflow: hidden; background: rgba(255,255,255,0.2); }
         .avatar img { width: 100%; height: 100%; object-fit: cover; }

@@ -9,10 +9,16 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #050811; color: var(--text); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         body { overflow: visible !important; }
-        .cv-page { width: 210mm; min-height: auto; margin: 0 auto; background: var(--navy-bg); display: flex;     align-items: stretch;
+        @media print {
+            html, body {
+                background: linear-gradient(to right, var(--navy-sidebar) 35%, var(--navy-bg) 35%) !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
         }
+        .cv-page { width: 210mm; min-height: auto; margin: 0 auto; background: var(--navy-bg); display: flex; align-items: stretch; }
         @media print { body { background: var(--navy-bg); } .cv-page { width: 100%; min-height: auto; } }
-        .sidebar { width: 35%; background: var(--navy-sidebar); border-right: 1px solid var(--border); padding: 26px 20px; display: flex; flex-direction: column; gap: 18px; }
+        .sidebar { width: 35%; background: var(--navy-sidebar); border-right: 1px solid var(--border); padding: 26px 20px; display: flex; flex-direction: column; gap: 18px; align-self: stretch; min-height: 100%; }
         .main { flex: 1; padding: 28px 24px; display: flex; flex-direction: column; gap: 18px; background: var(--navy-bg); }
         .avatar-wrap { width: 84px; height: 84px; border-radius: 50%; margin: 0 auto 12px; padding: 3px; background: var(--gold-gradient); }
         .avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: #1e293b; }

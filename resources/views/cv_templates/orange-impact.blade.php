@@ -7,10 +7,16 @@
     <style>
         :root { --orange: #ea580c; --orange-dark: #c2410c; --orange-bg: #fff7ed; --text: #1c1917; --muted: #78716c; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: #fafaf9; color: var(--text); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body { font-family: 'Raleway', sans-serif; background: #fff5f0; color: var(--text); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         body { overflow: visible !important; }
-        .cv-page { width: 210mm; min-height: auto; margin: 0 auto; background: #fff; display: flex; flex-direction: column;     align-items: stretch;
+        @media print {
+            html, body {
+                background: linear-gradient(to right, var(--orange-bg) 33%, #ffffff 33%) !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
         }
+        .cv-page { width: 210mm; min-height: auto; margin: 0 auto; background: #fff; display: flex; align-items: stretch; }
         @media print { body { background: #fff; } .cv-page { width: 100%; min-height: auto; } }
         .header { background: var(--orange); color: #fff; padding: 26px 30px; display: flex; justify-content: space-between; align-items: center; }
         .header h1 { font-family: 'Montserrat', sans-serif; font-size: 26px; font-weight: 900; text-transform: uppercase; letter-spacing: -0.5px; }
@@ -19,7 +25,7 @@
         .avatar img { width: 100%; height: 100%; object-fit: cover; }
         .avatar-init { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; }
         .body-wrap { display: flex; flex: 1; }
-        .sidebar { width: 33%; background: var(--orange-bg); padding: 22px 18px; display: flex; flex-direction: column; gap: 16px; border-right: 1px solid #fed7aa; }
+        .sidebar { width: 33%; background: var(--orange-bg); padding: 22px 18px; display: flex; flex-direction: column; gap: 16px; border-right: 1px solid #fed7aa; align-self: stretch; min-height: 100%; }
         .main { flex: 1; padding: 24px 26px; display: flex; flex-direction: column; gap: 16px; }
         .sec-title { font-family: 'Montserrat', sans-serif; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--orange-dark); margin-bottom: 8px; border-bottom: 2px solid var(--orange); padding-bottom: 3px; }
         .ci { font-size: 9.5px; color: #44403c; margin-bottom: 5px; word-break: break-all; }
