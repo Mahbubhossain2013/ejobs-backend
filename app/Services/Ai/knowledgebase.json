@@ -1,0 +1,79 @@
+{
+  "site_name": "eJobs.bd",
+  "domain": "job-portal",
+  "environment": "development",
+  "routing_map": {
+    "public": {
+      "/": "Homepage with featured job roles and active stats.",
+      "/jobs": "Corporate and NGO jobs listing page featuring active search and filtering filters. Includes interactive Top Hiring Employers snapshot panel.",
+      "/remote-jobs": "Remote Freelance Marketplace page styled beautifully with an indigo-gradient hero, active escrow status tags, 7 responsive category hubs, custom sidebar budget selectors, real-time BDT/USD exchange rate conversions, project details links, How it Works guides, and Escrow payment breakdowns.",
+      "/companies": "Hiring corporate directory listing active companies and their vacancy counts.",
+      "/leaderboard": "Top ranked candidates based on profile completeness, assessments, and freelance project success.",
+      "/ai-career": "AI Career Coach page providing missing skill analysis, interview question prep, suggested salary limits, and growth roadmaps.",
+      "/ai-assistant": "Interactive full-site AI Agent chat page that assists users with support queries and features automated ticketing.",
+      "/login": "Candidate login gate. Also the unified login page for employers (redirected from /employer/login).",
+      "/register": "Candidate registration portal.",
+      "/employer/login": "Deprecated; redirects to the unified /login page.",
+      "/employer/register": "Employer workspace registration portal."
+    },
+    "candidate_dashboard": {
+      "/dashboard": "Candidate profile details, progress gauges, and activity summaries.",
+      "/dashboard/resume": "Resume preview, file upload tracker, and metadata.",
+      "/dashboard/cv-builder": "AI CV builder wizard helping users generate optimized resume profiles in seconds.",
+      "/dashboard/wallet": "Candidate wallet showing balance and facilitating payouts via local gateways.",
+      "/dashboard/workspace": "Private remote job workspace panel managing active milestones, chatting, and submitting files.",
+      "/dashboard/messages": "Direct candidate-employer messaging threads protected by AI moderation.",
+      "/dashboard/job-alerts": "Manage customized notifications on match vacancies.",
+      "/dashboard/interviews": "Overview of scheduled interview call times and platforms.",
+      "/dashboard/assessments": "Corporate screening assessments and diagnostic lists.",
+      "/dashboard/skill-tests": "Technical tests to earn verified skills badges.",
+      "/dashboard/settings": "Security preferences, two-factor auth, and credential updates.",
+      "/dashboard/tickets": "View, reply, and create customer service support tickets."
+    },
+    "employer_dashboard": {
+      "/employer/dashboard": "Employer metrics, count of applicants, active jobs, and budget graphs.",
+      "/employer/profile": "Configure company details, logo, website, address, and culture highlights.",
+      "/employer/post-job": "Post a corporate job circular or list a remote freelance project.",
+      "/employer/applicants": "Track applicants and run the AI Hiring Insights compatibility diagnostics.",
+      "/employer/wallet": "Employer wallet used to deposit escrow project funds and pay monthly hiring plans.",
+      "/employer/manage-jobs": "Edit corporate job notices or sponsor active remote projects.",
+      "/employer/workspace": "Manage remote project progress, approve candidate milestones, and release escrow funds.",
+      "/employer/messages": "Chat with applicants or active contractors.",
+      "/employer/tickets": "Support tickets raised by the employer."
+    }
+  },
+  "database_models": {
+    "User": "Represents candidates, employers, and administrators. Handles basic credentials, roles, and profile settings.",
+    "Company": "Corporate and employer profile information containing logos, addresses, and employee counts.",
+    "Job": "Database model representing corporate vacancies, NGO circulars, and remote freelance projects. Includes budget, experience requirements, timezone, and duration fields.",
+    "Category": "Job taxonomy groupings such as Web Dev, Design, AI & Data, Marketing, and Writing.",
+    "SupportTicket": "Model tracking user support requests, subjects, statuses, and agent assignments.",
+    "AdminTask": "Model storing unhandled AI assistant queries escalated automatically to administrators.",
+    "AiUsageLog": "Telemetry logger recording model, prompt/completion tokens, duration, status, and fallback state."
+  },
+  "platform_policies": {
+    "escrow_payment": {
+      "security": "100% secure escrow protection. Employers deposit project budgets to the platform before the candidate starts work.",
+      "service_fee": "A flat 5% service fee is deducted from the milestone payout. Candidates receive 95% of the total budget.",
+      "withdrawals": "Candidates can withdraw earnings from their dashboard wallet using supported payout gateways."
+    },
+    "currency_preference": {
+      "default": "BDT (৳)",
+      "conversions": "Supports dynamic display in USD or BDT. Default conversion rate is locked to 1 USD = 115 BDT."
+    },
+    "premium_access": {
+      "ai_career_tools": "Requires a candidate to hold a Premium or Pro subscription tier. Triggers CTA upsell warning if user tries to use AI tools on a free tier."
+    },
+    "subscription_plans_and_pricing": {
+      "candidate_plans": "Free, Premium, and Pro plans tailored for job seekers.",
+      "employer_plans": "Free, Premium, and Pro plans tailored for companies and recruiters.",
+      "downgrade_policy": "Users are restricted from downgrading to a plan with a price lower than their current active plan.",
+      "prorated_upgrade_policy": "When upgrading to a higher plan, the remaining value of the current active plan is calculated daily and credited toward the purchase of the new plan. Net payable = (New plan price + tax) - Prorated credit.",
+      "deposit_and_purchase_workflow": "Subscriptions are purchased using wallet funds. If wallet funds are insufficient, users can choose payment gateways (like BKash, Nagad, Rocket, or card) to deposit funds directly from the confirm purchase modal."
+    }
+  },
+  "troubleshooting_and_debugging": {
+    "filament_icons": "Filament outline icons use the prefix 'heroicon-o-' while solid icons use 'heroicon-s-'. Names like 'o-magnifying-glass-slash' are invalid in Heroicons v2 and cause SvgNotFound errors. Safe outline icons include 'heroicon-o-magnifying-glass' and 'heroicon-o-exclamation-circle'.",
+    "ai_failover": "The backend features a Multi-AI Failover System inside AiManagerService. If Gemini APIs timeout or throw errors, requests failover sequentially to OpenAI/OpenRouter, and ultimately to high-fidelity mock fallback responders to ensure zero service disruptions."
+  }
+}

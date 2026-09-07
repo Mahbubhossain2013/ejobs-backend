@@ -1,0 +1,75 @@
+/.phpunit.cache
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/vendor
+.env
+.env.backup
+.env.production
+.phpactor.json
+Homestead.json
+Homestead.yaml
+auth.json
+npm-debug.log
+yarn-error.log
+/.fleet
+/.idea
+/.vscode
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sql
+
+# Laravel specific
+/storage/logs/*
+!storage/logs/.gitignore
+/storage/framework/views/*
+!storage/framework/views/.gitignore
+/storage/framework/cache/*
+!storage/framework/cache/.gitignore
+/storage/framework/sessions/*
+!storage/framework/sessions/.gitignore
+
+# PHP error logs
+error_log
+
+# Debug files (dev-only)
+check_panel.php
+debug_panel.php
+debug_routes.php
+
+# Dev-only output
+route_list.txt
+route_list_full.txt
+temp_check.txt
+remote_files.txt
+remote_list.txt
+
+# Dev-only directories
+/demos/
+/src/
+/docker/
+/tests/
+/tools/
+
+# Test files (should not be in repo)
+_check_ne.php
+_set_ne_logo.php
+_test_*.php
+test_pdf.php
+cookies.txt
+serve.log
+serve_err.log
+error_log
+.phpunit.result.cache
+er->syncRoles*
+_test_cookies.txt
+php_err.log
+serve_out.log
+*.log
+laravel-serve.log
+

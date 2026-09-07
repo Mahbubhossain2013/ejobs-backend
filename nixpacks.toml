@@ -1,0 +1,8 @@
+[phases.install]
+cmds = [
+  "mkdir -p bootstrap/cache storage/framework/cache storage/framework/sessions storage/framework/views storage/logs storage/app/public",
+  "composer install --ignore-platform-reqs --no-dev --no-interaction --prefer-dist"
+]
+
+[start]
+cmd = "php artisan serve --host=0.0.0.0 --port=$PORT"

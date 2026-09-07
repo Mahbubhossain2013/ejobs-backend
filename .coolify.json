@@ -1,0 +1,5 @@
+{
+  "name": "eJobs-Backend",
+  "type": "dockerfile",
+  "dockerfile": "Dockerfile"
+}
