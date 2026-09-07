@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Models\UserProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
@@ -18,9 +20,10 @@ class SocialAuthController extends Controller
      */
     public function redirect(Request $request, string $provider)
     {
-        $request->validate([
-            'role' => 'required|in:candidate,employer',
-        ]);
+        $role = $request->input('role', 'candidate');
+        if (!in_array($role, ['candidate', 'employer'])) {
+            $role = 'candidate';
+        }
 
         if (!in_array($provider, ['google', 'facebook'])) {
             return response()->json(['status' => false, 'message' => 'Invalid provider'], 400);
@@ -32,11 +35,16 @@ class SocialAuthController extends Controller
             return response()->json(['status' => false, 'message' => ucfirst($provider) . ' login is disabled'], 400);
         }
 
-        // Store role in session for callback
-        session(['social_auth_role' => $request->role]);
+        // Store role in state parameter so stateless OAuth preserves it without session cookies
+        $stateData = base64_encode(json_encode([
+            'role' => $role,
+            'nonce' => Str::random(16),
+        ]));
 
         return Socialite::driver($provider)
+            ->stateless()
             ->scopes($provider === 'google' ? ['email', 'profile'] : ['email'])
+            ->with(['state' => $stateData])
             ->redirect();
     }
 
@@ -45,17 +53,30 @@ class SocialAuthController extends Controller
      */
     public function callback(Request $request, string $provider)
     {
+        $frontendUrl = rtrim(env('FRONTEND_URL', config('app.frontend_url', 'https://ejobs.bd')), '/');
+
         try {
             if (!in_array($provider, ['google', 'facebook'])) {
-                return response()->json(['status' => false, 'message' => 'Invalid provider'], 400);
+                return redirect("{$frontendUrl}/login?error=invalid_provider");
             }
 
-            $socialUser = Socialite::driver($provider)->user();
-            $role = session('social_auth_role', 'candidate');
+            // Use stateless() to eliminate cross-domain session cookie and CSRF state failures
+            $socialUser = Socialite::driver($provider)->stateless()->user();
+
+            // Decode role from OAuth state parameter
+            $role = 'candidate';
+            $rawState = $request->input('state');
+            if ($rawState) {
+                $decoded = json_decode(base64_decode($rawState), true);
+                if (!empty($decoded['role']) && in_array($decoded['role'], ['candidate', 'employer'])) {
+                    $role = $decoded['role'];
+                }
+            } elseif (session()->has('social_auth_role')) {
+                $role = session('social_auth_role');
+            }
 
             // Find or create user
             $user = null;
-            $isNewUser = false;
 
             // Check by provider ID first
             if ($provider === 'google') {
@@ -80,11 +101,10 @@ class SocialAuthController extends Controller
 
             // Create new user if not found
             if (!$user) {
-                $isNewUser = true;
                 $name = $socialUser->getName() ?: $socialUser->getNickname() ?: 'User';
                 $email = $socialUser->getEmail();
 
-                // Require email from social provider - redirect to complete registration if not available
+                // Require email from social provider
                 if (!$email) {
                     $pendingToken = Str::random(60);
                     Cache::put("social_pending:{$pendingToken}", [
@@ -94,19 +114,24 @@ class SocialAuthController extends Controller
                         'avatar' => $socialUser->getAvatar(),
                     ], now()->addMinutes(30));
 
-                    return redirect(config('app.frontend_url', 'https://ejobs.bd') . "/auth/complete-registration?token={$pendingToken}&provider={$provider}");
+                    return redirect("{$frontendUrl}/auth/complete-registration?token={$pendingToken}&provider={$provider}");
                 }
 
                 // Generate unique username
-                $username = Str::slug($name) . '-' . Str::random(5);
+                $baseSlug = Str::slug($name);
+                $username = ($baseSlug ?: 'user') . '-' . Str::random(5);
+                while (User::where('username', $username)->exists()) {
+                    $username = ($baseSlug ?: 'user') . '-' . Str::random(5);
+                }
 
                 $userData = [
                     'name' => $name,
                     'username' => $username,
                     'email' => $email,
-                    'password' => null, // No password for social auth users
+                    'password' => Hash::make(Str::random(32)), // Column is NOT NULL
                     'avatar' => $socialUser->getAvatar(),
                     'provider' => $provider,
+                    'email_verified_at' => now(),
                 ];
 
                 if ($provider === 'google') {
@@ -116,10 +141,26 @@ class SocialAuthController extends Controller
                 }
 
                 $user = User::create($userData);
-                $user->assignRole($role);
+
+                try {
+                    $user->assignRole($role);
+                } catch (\Throwable $re) {
+                    Log::warning("Assign role {$role} to user {$user->id} failed: " . $re->getMessage());
+                }
 
                 // Create profile
-                UserProfile::create(['user_id' => $user->id]);
+                if ($role === 'candidate') {
+                    UserProfile::firstOrCreate(['user_id' => $user->id]);
+                } else {
+                    UserProfile::firstOrCreate(['user_id' => $user->id]);
+                    \App\Models\Company::firstOrCreate([
+                        'user_id' => $user->id,
+                    ], [
+                        'name' => $name,
+                        'slug' => Str::slug($name) . '-' . Str::random(6),
+                        'is_verified' => false,
+                    ]);
+                }
 
                 Log::info("New social auth user created: {$user->email} via {$provider}");
             }
@@ -127,15 +168,22 @@ class SocialAuthController extends Controller
             // Generate Sanctum token
             $token = $user->createToken('social_auth_token')->plainTextToken;
 
+            // Determine user role
+            $userRole = null;
+            try {
+                $userRole = $user->getRoleNames()->first();
+            } catch (\Throwable $ignored) {}
+            if (!$userRole) {
+                $userRole = $user->role ?: $role;
+            }
+
             // Redirect to frontend with token
-            $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
-            $redirectUrl = "{$frontendUrl}/auth/callback?token={$token}&role={$user->getRoleNames()->first()}&provider={$provider}";
+            $redirectUrl = "{$frontendUrl}/auth/callback?token={$token}&role={$userRole}&provider={$provider}";
 
             return redirect($redirectUrl);
 
         } catch (\Throwable $e) {
-            Log::error("Social auth callback error: " . $e->getMessage());
-            $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
+            Log::error("Social auth callback error: " . get_class($e) . ': ' . $e->getMessage() . " at " . $e->getFile() . ":" . $e->getLine());
             return redirect("{$frontendUrl}/login?error=social_auth_failed");
         }
     }
@@ -159,3 +207,4 @@ class SocialAuthController extends Controller
         return $setting ? $setting->value : $default;
     }
 }
+
