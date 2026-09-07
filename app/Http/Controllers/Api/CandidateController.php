@@ -233,22 +233,46 @@ class CandidateController extends Controller
                 Log::warning('Candidate locked badges query failed: ' . $e->getMessage());
             }
 
+            $savedJobsCount = 0;
+            try {
+                $savedJobsCount = $user->savedJobs()->count();
+            } catch (\Throwable $e) {
+                Log::warning('Candidate saved jobs count failed: ' . $e->getMessage());
+            }
+
+            $matchScore = 0;
+            try {
+                $matchScore = round(\App\Models\AiMatchScore::where('user_id', $user->id)->avg('score') ?? 0);
+            } catch (\Throwable $e) {
+                Log::warning('Candidate match score query failed: ' . $e->getMessage());
+            }
+
+            $activeBadges = collect();
+            try {
+                $activeBadges = $user->activeBadges();
+            } catch (\Throwable $e) {
+                Log::warning('Candidate activeBadges failed: ' . $e->getMessage());
+            }
+
+            $profileData = $user->profile ? $user->profile->toArray() : [];
+
             $userData = [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'username' => $user->username,
                 'avatar' => $user->avatar,
-                'profile' => array_merge($user->profile->toArray(), [
+                'profile' => array_merge($profileData, [
                     'skills' => $normalizedSkills,
-                    'active_badges' => $user->activeBadges(),
+                    'active_badges' => $activeBadges,
                     'locked_badges' => $lockedBadges,
                     'documents' => $documents,
                     'educations' => $educations,
                     'experiences' => $experiences,
                     'trainings' => $trainings,
                     'certifications' => $certifications,
-                    'match_score' => \App\Models\AiMatchScore::where('user_id', $user->id)->avg('score') ?? 0,
+                    'match_score' => $matchScore,
+                    'saved_jobs_count' => $savedJobsCount,
                 ]),
             ];
 
@@ -256,14 +280,16 @@ class CandidateController extends Controller
                 'status' => true,
                 'user' => $userData,
                 'applications' => $applications,
+                'saved_jobs_count' => $savedJobsCount,
                 'stats' => [
                     'applied' => $applications->count(),
                     'shortlisted' => $applications->where('status', 'shortlisted')->count(),
                     'interviews' => $applications->where('status', 'interview')->count(),
+                    'saved' => $savedJobsCount,
                 ]
             ]);
-        } catch (\Exception $e) {
-            Log::error('Candidate Dashboard Error: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('Candidate Dashboard Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
             return response()->json(['status' => false, 'message' => 'Failed to load dashboard'], 500);
         }
     }
