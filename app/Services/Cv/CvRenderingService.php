@@ -83,18 +83,27 @@ class CvRenderingService
 </div>
 HTML;
 
-        // 1. In 2-column templates, inject before the closing tags of .main-content / .content-right / .col-right / .right-col / .right-panel / .main
-        if (preg_match('/(<div[^>]*class=[\'"][^\'"]*(?:main-content|content-right|right-column|col-right|main_column|content-main|right-panel|main-panel|right-col|main)[^\'"]*[\'"][^>]*>[\s\S]*?)(<\/div>\s*<\/div>)/i', $html)) {
-            return preg_replace('/(<div[^>]*class=[\'"][^\'"]*(?:main-content|content-right|right-column|col-right|main_column|content-main|right-panel|main-panel|right-col|main)[^\'"]*[\'"][^>]*>[\s\S]*?)(<\/div>\s*<\/div>)/i', "$1\n{$signatureHtml}\n$2", $html, 1);
+        // Match the closing sequence at the very end of the file right before </body>
+        // This guarantees the signature is placed inside the content column at the very end of the document
+        // on the final page (page 1 if 1 page, page 2 if 2 pages, page 3 if 3 pages)
+        if (preg_match('/((?:\s*<\/div>)+\s*<\/body>)/i', $html, $matches, PREG_OFFSET_CAPTURE)) {
+            $closingSeq = $matches[0][0];
+            $offset = $matches[0][1];
+            $divCount = preg_match_all('/<\/div>/i', $closingSeq);
+            if ($divCount >= 2) {
+                $replacedSeq = preg_replace('/(<\/div>)/i', "{$signatureHtml}\n$1", $closingSeq, 1);
+                return substr_replace($html, $replacedSeq, $offset, strlen($closingSeq));
+            } else {
+                $replacedSeq = "{$signatureHtml}\n" . $closingSeq;
+                return substr_replace($html, $replacedSeq, $offset, strlen($closingSeq));
+            }
         }
 
-        // 2. In single-column or generic templates, insert before the last </div> before </body>
-        if (preg_match('/(<\/div>\s*<\/body>)/i', $html)) {
-            return preg_replace('/(<\/div>\s*<\/body>)/i', "{$signatureHtml}\n$1", $html, 1);
+        if (preg_match('/(<\/body>)/i', $html, $matches, PREG_OFFSET_CAPTURE)) {
+            return substr_replace($html, "{$signatureHtml}\n</body>", $matches[0][1], strlen($matches[0][0]));
         }
 
-        // 3. Fallback: right before </body>
-        return str_ireplace('</body>', "{$signatureHtml}\n</body>", $html);
+        return $html . "\n" . $signatureHtml;
     }
 
     /**
