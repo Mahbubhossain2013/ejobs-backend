@@ -222,6 +222,10 @@
                         @if(!empty($candidate['religion']))<span>{{ $candidate['religion'] }}</span>@endif
                         @if(!empty($candidate['blood_group']))<span>Blood: {{ $candidate['blood_group'] }}</span>@endif
                         @if(!empty($candidate['marital_status']))<span>{{ $candidate['marital_status'] }}</span>@endif
+                        @if(!empty($candidate['nid']))<span>NID: {{ $candidate['nid'] }}</span>@endif
+                        @if(!empty($candidate['driving_license']))<span>DL: {{ $candidate['driving_license'] }}</span>@endif
+                        @if(!empty($candidate['alt_phone']))<span>Alt: {{ $candidate['alt_phone'] }}</span>@endif
+                        @if(!empty($candidate['permanent_address']))<span>Perm: {{ $candidate['permanent_address'] }}</span>@endif
                     </div>
                 </div>
             </div>
@@ -399,6 +403,16 @@
                         @endforeach
                     </div>
                 </div>
+            @endif
+
+            {{-- CUSTOM SECTIONS --}}
+            @if(!empty($custom_sections) && count($custom_sections) > 0)
+                @foreach($custom_sections as $cSec)
+                    <div>
+                        <div class="section-label">{{ $cSec['title'] ?? 'Additional Section' }}</div>
+                        <div class="summary-text">{{ $cSec['description'] ?? '' }}</div>
+                    </div>
+                @endforeach
             @endif
         </div>
     </div>
