@@ -23,7 +23,8 @@ class CvRenderingService
                 $viewData = $this->buildViewData($data, $themeSettings);
                 $html = view($viewName, $viewData)->render();
                 $html = $this->ensureAllContentSections($html, $viewData);
-                return $this->ensureSignatureBlock($html, $data);
+                $html = $this->ensureSignatureBlock($html, $data);
+                return $this->ensurePageFitStyles($html, $data);
             }
 
             $html = $template->html_content;
@@ -45,7 +46,8 @@ class CvRenderingService
             $rendered = Blade::render($html, $viewData);
             $rendered = $this->ensureAllContentSections($rendered, $viewData);
 
-            return $this->ensureSignatureBlock($rendered, $data);
+            $rendered = $this->ensureSignatureBlock($rendered, $data);
+            return $this->ensurePageFitStyles($rendered, $data);
 
         } catch (\Throwable $e) {
             Log::error("CvRenderingService Crash: " . $e->getMessage(), [
@@ -108,6 +110,69 @@ HTML;
         }
 
         return $html . "\n" . $signatureHtml;
+    }
+
+    /**
+     * Ensures that the rendered template HTML includes dynamic 1, 2, or 3 page fitting styles.
+     */
+    public function ensurePageFitStyles(string $html, array $data): string
+    {
+        $pageCount = (int) ($data['page_count'] ?? 1);
+        if (!in_array($pageCount, [1, 2, 3])) {
+            $pageCount = 1;
+        }
+
+        $pageFitCss = match ($pageCount) {
+            1 => '
+                @page { size: A4 portrait; margin: 0mm !important; }
+                @media print {
+                    html, body { width: 210mm !important; height: 297mm !important; max-height: 297mm !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
+                    .cv-page { width: 210mm !important; height: 297mm !important; max-height: 297mm !important; min-height: 297mm !important; overflow: hidden !important; page-break-after: avoid !important; break-after: avoid !important; }
+                }
+                body, .cv-page, .resume-page { font-size: 10px !important; line-height: 1.34 !important; }
+                p, li, .desc, .exp-desc, .details, .summary-text, .item-desc { font-size: 9.5px !important; line-height: 1.32 !important; }
+                .sec-title, .main-section-title, .sec-heading, .section-title, .side-title, .side-tab, .badge-title { font-size: 11.5px !important; margin-top: 6px !important; margin-bottom: 5px !important; padding-bottom: 2px !important; }
+                .hero, .header, .header-block, .profile-header { padding: 14px 20px !important; }
+                .left-col, .sidebar, .side, .col-left, .left-panel, aside, .right-col, .main, .main-content, .col-right { padding: 12px 16px !important; gap: 8px !important; }
+                .exp-item, .edu-item, .item-box, .entry-block, .card-box, .timeline-item { margin-bottom: 5px !important; padding-bottom: 3px !important; }
+            ',
+            2 => '
+                @page { size: A4 portrait; margin: 0mm !important; }
+                @media print {
+                    html, body { width: 210mm !important; height: 594mm !important; max-height: 594mm !important; margin: 0 !important; padding: 0 !important; }
+                    .cv-page { width: 210mm !important; min-height: 594mm !important; max-height: 594mm !important; height: 594mm !important; page-break-after: avoid !important; break-after: avoid !important; }
+                    .left-col, .sidebar, .side, .col-left, .left-panel, aside, .right-col, .main, .main-content, .col-right, .body-wrap, .body-split, .columns-wrap { min-height: 594mm !important; align-self: stretch !important; }
+                }
+                body, .cv-page, .resume-page { font-size: 11px !important; line-height: 1.5 !important; }
+                p, li, .desc, .exp-desc, .details, .summary-text, .item-desc { font-size: 10.5px !important; line-height: 1.48 !important; }
+                .sec-title, .main-section-title, .sec-heading, .section-title, .side-title, .side-tab, .badge-title { font-size: 13px !important; margin-top: 14px !important; margin-bottom: 10px !important; padding-bottom: 4px !important; }
+                .hero, .header, .header-block, .profile-header { padding: 24px 28px !important; }
+                .left-col, .sidebar, .side, .col-left, .left-panel, aside, .right-col, .main, .main-content, .col-right { padding: 18px 22px !important; gap: 14px !important; }
+                .exp-item, .edu-item, .item-box, .entry-block, .card-box, .timeline-item { margin-bottom: 12px !important; padding-bottom: 6px !important; }
+            ',
+            3 => '
+                @page { size: A4 portrait; margin: 0mm !important; }
+                @media print {
+                    html, body { width: 210mm !important; height: 891mm !important; max-height: 891mm !important; margin: 0 !important; padding: 0 !important; }
+                    .cv-page { width: 210mm !important; min-height: 891mm !important; max-height: 891mm !important; height: 891mm !important; page-break-after: avoid !important; break-after: avoid !important; }
+                    .left-col, .sidebar, .side, .col-left, .left-panel, aside, .right-col, .main, .main-content, .col-right, .body-wrap, .body-split, .columns-wrap { min-height: 891mm !important; align-self: stretch !important; }
+                }
+                body, .cv-page, .resume-page { font-size: 12px !important; line-height: 1.62 !important; }
+                p, li, .desc, .exp-desc, .details, .summary-text, .item-desc { font-size: 11.5px !important; line-height: 1.58 !important; }
+                .sec-title, .main-section-title, .sec-heading, .section-title, .side-title, .side-tab, .badge-title { font-size: 14.5px !important; margin-top: 20px !important; margin-bottom: 14px !important; padding-bottom: 6px !important; }
+                .hero, .header, .header-block, .profile-header { padding: 30px 36px !important; }
+                .left-col, .sidebar, .side, .col-left, .left-panel, aside, .right-col, .main, .main-content, .col-right { padding: 24px 28px !important; gap: 20px !important; }
+                .exp-item, .edu-item, .item-box, .entry-block, .card-box, .timeline-item { margin-bottom: 18px !important; padding-bottom: 8px !important; }
+            ',
+        };
+
+        $styleBlock = "<style id=\"cv-server-page-fit\">{$pageFitCss}\n.item-box,.exp-item,.edu-item,.skill-item,.signature-box,.cv-signature-section{page-break-inside:avoid!important;break-inside:avoid!important;}.sec-title,.section-title,.section-label{page-break-after:avoid!important;break-after:avoid!important;}</style>";
+
+        if (str_contains($html, '</head>')) {
+            return str_replace('</head>', "{$styleBlock}\n</head>", $html);
+        }
+
+        return "{$styleBlock}\n{$html}";
     }
 
     /**

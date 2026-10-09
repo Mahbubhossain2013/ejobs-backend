@@ -155,6 +155,7 @@ class CvResumeController extends Controller
                     'social_links' => $socialLinks,
                     'references' => $references,
                     'training' => $training,
+                    'page_count' => (int) ($incoming['page_count'] ?? $request->input('page_count') ?? 1),
                 ]
             ]);
 
