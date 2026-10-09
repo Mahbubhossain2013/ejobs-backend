@@ -9,6 +9,7 @@ use App\Models\CandidateData;
 use App\Services\Ai\AiManagerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -232,105 +233,110 @@ class CvResumeController extends Controller
     public function previewDemo($slug)
     {
         try {
-            $template = CvTemplate::where('slug', $slug)->where('is_active', true)->firstOrFail();
+            $cacheKey = "cv_template_demo_html_{$slug}";
+            $html = Cache::remember($cacheKey, 86400, function () use ($slug) {
+                $template = CvTemplate::where('slug', $slug)->where('is_active', true)->firstOrFail();
 
-            $demoData = [
-                'personal' => [
-                    'full_name' => 'Sarah Johnson',
-                    'title' => 'Senior Product Designer',
-                    'email' => 'sarah.johnson@email.com',
-                    'phone' => '+1 (555) 987-6543',
-                    'location' => 'San Francisco, CA',
-                    'summary' => 'Creative and detail-oriented product designer with 8+ years of experience crafting intuitive digital experiences. Passionate about user-centered design, design systems, and bridging the gap between business goals and user needs.',
-                    'bio' => 'Creative and detail-oriented product designer with 8+ years of experience crafting intuitive digital experiences. Passionate about user-centered design, design systems, and bridging the gap between business goals and user needs.',
-                    'linkedin' => 'linkedin.com/in/sarahjohnson',
-                    'github' => 'github.com/sarahj',
-                    'website' => 'sarahjohnson.design',
-                ],
-                'skills' => [
-                    ['name' => 'UI/UX Design', 'level' => 95],
-                    ['name' => 'Figma', 'level' => 92],
-                    ['name' => 'Design Systems', 'level' => 88],
-                    ['name' => 'Prototyping', 'level' => 90],
-                    ['name' => 'User Research', 'level' => 85],
-                    ['name' => 'HTML/CSS', 'level' => 82],
-                    ['name' => 'JavaScript', 'level' => 65],
-                    ['name' => 'Motion Design', 'level' => 75],
-                ],
-                'experience' => [
-                    [
-                        'company' => 'TechCorp Inc.',
-                        'position' => 'Senior Product Designer',
-                        'start_date' => '2021-03',
-                        'end_date' => null,
+                $demoData = [
+                    'personal' => [
+                        'full_name' => 'Sarah Johnson',
+                        'title' => 'Senior Product Designer',
+                        'email' => 'sarah.johnson@email.com',
+                        'phone' => '+1 (555) 987-6543',
                         'location' => 'San Francisco, CA',
-                        'description' => 'Leading the design team in creating next-generation SaaS products used by 2M+ active users worldwide.',
-                        'achievements' => [
-                            'Redesigned the core platform experience, increasing user engagement by 34%',
-                            'Built and maintained a design system serving 12 product teams',
-                            'Mentored 4 junior designers and established design critique processes',
+                        'summary' => 'Creative and detail-oriented product designer with 8+ years of experience crafting intuitive digital experiences. Passionate about user-centered design, design systems, and bridging the gap between business goals and user needs.',
+                        'bio' => 'Creative and detail-oriented product designer with 8+ years of experience crafting intuitive digital experiences. Passionate about user-centered design, design systems, and bridging the gap between business goals and user needs.',
+                        'linkedin' => 'linkedin.com/in/sarahjohnson',
+                        'github' => 'github.com/sarahj',
+                        'website' => 'sarahjohnson.design',
+                    ],
+                    'skills' => [
+                        ['name' => 'UI/UX Design', 'level' => 95],
+                        ['name' => 'Figma', 'level' => 92],
+                        ['name' => 'Design Systems', 'level' => 88],
+                        ['name' => 'Prototyping', 'level' => 90],
+                        ['name' => 'User Research', 'level' => 85],
+                        ['name' => 'HTML/CSS', 'level' => 82],
+                        ['name' => 'JavaScript', 'level' => 65],
+                        ['name' => 'Motion Design', 'level' => 75],
+                    ],
+                    'experience' => [
+                        [
+                            'company' => 'TechCorp Inc.',
+                            'position' => 'Senior Product Designer',
+                            'start_date' => '2021-03',
+                            'end_date' => null,
+                            'location' => 'San Francisco, CA',
+                            'description' => 'Leading the design team in creating next-generation SaaS products used by 2M+ active users worldwide.',
+                            'achievements' => [
+                                'Redesigned the core platform experience, increasing user engagement by 34%',
+                                'Built and maintained a design system serving 12 product teams',
+                                'Mentored 4 junior designers and established design critique processes',
+                            ],
+                        ],
+                        [
+                            'company' => 'DesignStudio Co.',
+                            'position' => 'Product Designer',
+                            'start_date' => '2018-06',
+                            'end_date' => '2021-02',
+                            'location' => 'New York, NY',
+                            'description' => 'Designed end-to-end user experiences for mobile and web applications across fintech and e-commerce domains.',
+                            'achievements' => [
+                                'Led the redesign of a payment flow that reduced drop-off by 28%',
+                                'Conducted 50+ user interviews to inform product strategy',
+                                'Collaborated with engineering to implement pixel-perfect interfaces',
+                            ],
                         ],
                     ],
-                    [
-                        'company' => 'DesignStudio Co.',
-                        'position' => 'Product Designer',
-                        'start_date' => '2018-06',
-                        'end_date' => '2021-02',
-                        'location' => 'New York, NY',
-                        'description' => 'Designed end-to-end user experiences for mobile and web applications across fintech and e-commerce domains.',
-                        'achievements' => [
-                            'Led the redesign of a payment flow that reduced drop-off by 28%',
-                            'Conducted 50+ user interviews to inform product strategy',
-                            'Collaborated with engineering to implement pixel-perfect interfaces',
+                    'education' => [
+                        [
+                            'institution' => 'Rhode Island School of Design',
+                            'degree' => 'Bachelor of Fine Arts',
+                            'field_of_study' => 'Graphic Design',
+                            'start_date' => '2013-09',
+                            'end_date' => '2017-05',
                         ],
                     ],
-                ],
-                'education' => [
-                    [
-                        'institution' => 'Rhode Island School of Design',
-                        'degree' => 'Bachelor of Fine Arts',
-                        'field_of_study' => 'Graphic Design',
-                        'start_date' => '2013-09',
-                        'end_date' => '2017-05',
+                    'projects' => [
+                        [
+                            'name' => 'DesignOps Dashboard',
+                            'description' => 'An internal tool for tracking design system adoption, component usage, and team velocity across multiple product squads.',
+                            'url' => '',
+                            'role' => 'Lead Designer',
+                            'technologies' => ['Figma', 'React', 'D3.js'],
+                        ],
+                        [
+                            'name' => 'Mobile Banking App',
+                            'description' => 'Complete redesign of a mobile banking experience serving 500K+ users with focus on accessibility and simplicity.',
+                            'url' => '',
+                            'role' => 'UX Lead',
+                            'technologies' => ['Figma', 'Swift', 'Prototype'],
+                        ],
                     ],
-                ],
-                'projects' => [
-                    [
-                        'name' => 'DesignOps Dashboard',
-                        'description' => 'An internal tool for tracking design system adoption, component usage, and team velocity across multiple product squads.',
-                        'url' => '',
-                        'role' => 'Lead Designer',
-                        'technologies' => ['Figma', 'React', 'D3.js'],
+                    'certifications' => [
+                        [
+                            'name' => 'Google UX Design Professional',
+                            'issuer' => 'Google',
+                            'date' => '2022-08',
+                        ],
                     ],
-                    [
-                        'name' => 'Mobile Banking App',
-                        'description' => 'Complete redesign of a mobile banking experience serving 500K+ users with focus on accessibility and simplicity.',
-                        'url' => '',
-                        'role' => 'UX Lead',
-                        'technologies' => ['Figma', 'Swift', 'Prototype'],
+                    'languages' => [
+                        ['name' => 'English', 'proficiency' => 'Native'],
+                        ['name' => 'Spanish', 'proficiency' => 'Conversational'],
+                        ['name' => 'Japanese', 'proficiency' => 'Basic'],
                     ],
-                ],
-                'certifications' => [
-                    [
-                        'name' => 'Google UX Design Professional',
-                        'issuer' => 'Google',
-                        'date' => '2022-08',
-                    ],
-                ],
-                'languages' => [
-                    ['name' => 'English', 'proficiency' => 'Native'],
-                    ['name' => 'Spanish', 'proficiency' => 'Conversational'],
-                    ['name' => 'Japanese', 'proficiency' => 'Basic'],
-                ],
-            ];
+                ];
 
-            $renderer = app(\App\Services\Cv\CvRenderingService::class);
-            $html = $renderer->render($template, $demoData, []);
+                $renderer = app(\App\Services\Cv\CvRenderingService::class);
+                return $renderer->render($template, $demoData, []);
+            });
+
             return response($html)
                 ->header('Content-Type', 'text/html; charset=UTF-8')
                 ->header('X-Frame-Options', 'ALLOWALL')
                 ->header('Content-Security-Policy', 'frame-ancestors *')
-                ->header('Access-Control-Allow-Origin', '*');
+                ->header('Access-Control-Allow-Origin', '*')
+                ->header('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response("Template not found.", 404);
         } catch (\Exception $e) {
@@ -383,6 +389,9 @@ class CvResumeController extends Controller
                 if (isset($editorData['educations'])) $data['education'] = $editorData['educations'];
                 if (isset($editorData['interests'])) $data['hobbies'] = $editorData['interests'];
                 if (isset($editorData['achievements'])) $data['awards'] = $editorData['achievements'];
+                if (isset($editorData['custom_sections'])) $data['custom_sections'] = $editorData['custom_sections'];
+                if (isset($editorData['training'])) $data['training'] = $editorData['training'];
+                if (isset($editorData['references'])) $data['references'] = $editorData['references'];
                 if (isset($editorData['resume_objective'])) $data['summary'] = is_array($editorData['resume_objective']) ? ($editorData['resume_objective']['description'] ?? '') : $editorData['resume_objective'];
             }
 
