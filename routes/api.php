@@ -64,6 +64,8 @@ Route::get('/auth/social-settings', [\App\Http\Controllers\Api\SocialAuthControl
 // --- Public Data & Listings ---
 Route::get('/cv/templates/public', [CvResumeController::class, 'getTemplates']);
 Route::get('/candidate/cv/templates', [CvResumeController::class, 'getTemplates']);
+Route::get('/cv/template-check/{slug}', [CvResumeController::class, 'checkTemplateAccess']);
+Route::get('/candidate/cv/template-check/{slug}', [CvResumeController::class, 'checkTemplateAccess']);
 Route::get('/candidate/cv/live-preview/{slug}', [CvResumeController::class, 'livePreview']);
 Route::post('/candidate/cv/live-preview/{slug}', [CvResumeController::class, 'livePreview']);
 Route::get('/cv/live-preview/{slug}', [CvResumeController::class, 'livePreview']);
@@ -683,6 +685,8 @@ Route::middleware(['auth:sanctum', 'security_monitor'])->group(function () {
         Route::get('/cv/resumes', [CvResumeController::class, 'index']);
         Route::post('/cv/resumes', [CvResumeController::class, 'create']);
         Route::post('/cv/create', [CvResumeController::class, 'create']);
+        Route::post('/cv/purchase-template', [CvResumeController::class, 'purchaseTemplate']);
+        Route::post('/candidate/cv/purchase-template', [CvResumeController::class, 'purchaseTemplate']);
         Route::get('/cv/resumes/{uuid}', [CvResumeController::class, 'show']);
         Route::put('/cv/resumes/{uuid}', [CvResumeController::class, 'update']);
         Route::get('/cv/resumes/{uuid}/preview', [CvResumeController::class, 'renderPreview']);

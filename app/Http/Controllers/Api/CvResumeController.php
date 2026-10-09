@@ -101,27 +101,44 @@ class CvResumeController extends Controller
 
             // Step 4: Handle premium template purchase - deduct wallet (one-time only)
             $template = \App\Models\CvTemplate::where('slug', $request->template_slug)->first();
-            $isPremiumPurchase = $template && $template->is_premium && $template->price > 0;
+            $isPremiumPurchase = $template && $template->is_premium && (float)$template->price > 0;
+            $isPaid = true;
 
             if ($isPremiumPurchase) {
                 $wallet = \App\Models\Wallet::where('user_id', $user->id)->first();
+                $alreadyPurchased = false;
                 if ($wallet) {
                     $alreadyPurchased = \App\Models\WalletTransaction::where('wallet_id', $wallet->id)
                         ->where('reference_type', 'cv_template_purchase')
                         ->where('description', "CV Template Purchase: {$template->name}")
                         ->where('status', 'completed')
                         ->exists();
+                }
 
-                    if ($alreadyPurchased) {
-                        $isPremiumPurchase = false;
+                if (!$alreadyPurchased) {
+                    $existingPaid = Resume::where('user_id', $user->id)
+                        ->where('template_slug', $request->template_slug)
+                        ->get()
+                        ->first(fn($r) => !empty($r->data_snapshot['is_paid']));
+                    if ($existingPaid) {
+                        $alreadyPurchased = true;
                     }
                 }
 
-                if ($isPremiumPurchase) {
+                if ($alreadyPurchased) {
+                    $isPremiumPurchase = false;
+                    $isPaid = true;
+                } else {
                     $wallet = \App\Models\Wallet::where('user_id', $user->id)->lockForUpdate()->first();
-                    if (!$wallet || $wallet->balance < $template->price) {
+                    if (!$wallet || (float)$wallet->balance < (float)$template->price) {
                         return response()->json([
                             'status' => false,
+                            'requires_payment' => true,
+                            'price' => (float) $template->price,
+                            'template_name' => $template->name,
+                            'template_slug' => $template->slug,
+                            'wallet_balance' => (float) ($wallet ? $wallet->balance : 0),
+                            'deficit' => (float) max(0, $template->price - ($wallet ? $wallet->balance : 0)),
                             'message' => 'Insufficient wallet balance to purchase this template.'
                         ], 402);
                     }
@@ -129,9 +146,10 @@ class CvResumeController extends Controller
                     $wallet->debit(
                         $template->price,
                         'cv_template_purchase',
-                        null,
+                        $template->id,
                         "CV Template Purchase: {$template->name}"
                     );
+                    $isPaid = true;
                 }
             }
 
@@ -156,11 +174,12 @@ class CvResumeController extends Controller
                     'references' => $references,
                     'training' => $training,
                     'page_count' => (int) ($incoming['page_count'] ?? $request->input('page_count') ?? 1),
+                    'is_paid' => $isPaid,
                 ]
             ]);
 
             Log::info("Resume created for user {$user->id} with UUID {$resume->uuid}");
-            return response()->json(['status' => true, 'data' => $resume]);
+            return response()->json(['status' => true, 'data' => $resume, 'is_paid' => $isPaid]);
         } catch (\Throwable $e) {
             Log::error("CV Create Crash: " . $e->getMessage(), ['user_id' => Auth::id()]);
             return response()->json([
@@ -176,8 +195,41 @@ class CvResumeController extends Controller
     public function show($uuid)
     {
         try {
-            $resume = Resume::where('uuid', $uuid)->where('user_id', Auth::id())->firstOrFail();
-            return response()->json(['status' => true, 'data' => $resume]);
+            $userId = Auth::id();
+            if (!$userId && request()->bearerToken()) {
+                $token = \Laravel\Sanctum\PersonalAccessToken::findToken(request()->bearerToken());
+                if ($token) $userId = $token->tokenable_id;
+            }
+
+            $resume = Resume::where('uuid', $uuid)
+                ->when($userId, function ($q) use ($userId) {
+                    $q->where(function ($sub) use ($userId) {
+                        $sub->where('user_id', $userId)->orWhere('is_public', true);
+                    });
+                }, function ($q) {
+                    $q->where('is_public', true);
+                })
+                ->firstOrFail();
+
+            $template = CvTemplate::where('slug', $resume->template_slug)->first();
+
+            $isPaid = !empty($resume->data_snapshot['is_paid']);
+            if (!$isPaid && $template && $template->is_premium && $resume->user_id) {
+                $wallet = \App\Models\Wallet::where('user_id', $resume->user_id)->first();
+                if ($wallet) {
+                    $isPaid = \App\Models\WalletTransaction::where('wallet_id', $wallet->id)
+                        ->where('reference_type', 'cv_template_purchase')
+                        ->where('description', "CV Template Purchase: {$template->name}")
+                        ->where('status', 'completed')
+                        ->exists();
+                }
+            }
+
+            $resumeData = $resume->toArray();
+            $resumeData['template'] = $template;
+            $resumeData['is_paid'] = (bool) $isPaid;
+
+            return response()->json(['status' => true, 'data' => $resumeData]);
         } catch (\Exception $e) {
             Log::error("Resume fetch error: " . $e->getMessage());
             return response()->json([
@@ -603,6 +655,30 @@ class CvResumeController extends Controller
                 $template = CvTemplate::where('slug', 'minimalist-free')->first();
             }
 
+            // Enforce payment check for premium templates
+            if ($template && $template->is_premium && (float)$template->price > 0) {
+                $isPaid = !empty($resume->data_snapshot['is_paid']);
+                if (!$isPaid && $resume->user_id) {
+                    $wallet = \App\Models\Wallet::where('user_id', $resume->user_id)->first();
+                    if ($wallet) {
+                        $isPaid = \App\Models\WalletTransaction::where('wallet_id', $wallet->id)
+                            ->where('reference_type', 'cv_template_purchase')
+                            ->where('description', "CV Template Purchase: {$template->name}")
+                            ->where('status', 'completed')
+                            ->exists();
+                    }
+                }
+                if (!$isPaid) {
+                    return response()->json([
+                        'status' => false,
+                        'requires_payment' => true,
+                        'price' => (float)$template->price,
+                        'template_name' => $template->name,
+                        'message' => 'Payment required to download this premium resume.'
+                    ], 402);
+                }
+            }
+
             $renderer = app(\App\Services\Cv\CvRenderingService::class);
             $themeSettings = $resume->theme_settings ?? [];
 
@@ -852,6 +928,30 @@ class CvResumeController extends Controller
                 $template = CvTemplate::where('slug', 'minimalist-free')->first();
             }
 
+            // Enforce payment check for premium templates
+            if ($template && $template->is_premium && (float)$template->price > 0) {
+                $isPaid = !empty($resume->data_snapshot['is_paid']);
+                if (!$isPaid && $resume->user_id) {
+                    $wallet = \App\Models\Wallet::where('user_id', $resume->user_id)->first();
+                    if ($wallet) {
+                        $isPaid = \App\Models\WalletTransaction::where('wallet_id', $wallet->id)
+                            ->where('reference_type', 'cv_template_purchase')
+                            ->where('description', "CV Template Purchase: {$template->name}")
+                            ->where('status', 'completed')
+                            ->exists();
+                    }
+                }
+                if (!$isPaid) {
+                    return response()->json([
+                        'status' => false,
+                        'requires_payment' => true,
+                        'price' => (float)$template->price,
+                        'template_name' => $template->name,
+                        'message' => 'Payment required to download this premium resume.'
+                    ], 402);
+                }
+            }
+
             $renderer = app(\App\Services\Cv\CvRenderingService::class);
             $themeSettings = $resume->theme_settings ?? [];
             $html = $renderer->render($template, $resume->data_snapshot ?? [], $themeSettings);
@@ -986,5 +1086,144 @@ class CvResumeController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Check if a template is premium, its price, and whether current user has purchased it.
+     */
+    public function checkTemplateAccess(Request $request, $slug)
+    {
+        try {
+            $template = CvTemplate::where('slug', $slug)->first();
+            if (!$template) {
+                return response()->json(['status' => false, 'message' => 'Template not found.'], 404);
+            }
+
+            $isPremium = (bool) ($template->is_premium && (float) $template->price > 0);
+            $price = (float) ($template->price ?? 0);
+
+            $user = Auth::guard('sanctum')->user();
+            if (!$user && $request->bearerToken()) {
+                $token = \Laravel\Sanctum\PersonalAccessToken::findToken($request->bearerToken());
+                if ($token) {
+                    $user = $token->tokenable;
+                }
+            }
+
+            $isPurchased = false;
+            $walletBalance = 0.0;
+
+            if ($user) {
+                $wallet = \App\Models\Wallet::where('user_id', $user->id)->first();
+                if ($wallet) {
+                    $walletBalance = (float) $wallet->balance;
+                    $isPurchased = \App\Models\WalletTransaction::where('wallet_id', $wallet->id)
+                        ->where('reference_type', 'cv_template_purchase')
+                        ->where('description', "CV Template Purchase: {$template->name}")
+                        ->where('status', 'completed')
+                        ->exists();
+                }
+
+                if (!$isPurchased) {
+                    $existingPaid = Resume::where('user_id', $user->id)
+                        ->where('template_slug', $slug)
+                        ->get()
+                        ->first(fn($r) => !empty($r->data_snapshot['is_paid']));
+                    if ($existingPaid) {
+                        $isPurchased = true;
+                    }
+                }
+            }
+
+            return response()->json([
+                'status' => true,
+                'data' => [
+                    'slug' => $template->slug,
+                    'name' => $template->name,
+                    'is_premium' => $isPremium,
+                    'price' => $price,
+                    'is_purchased' => $isPurchased,
+                    'wallet_balance' => $walletBalance,
+                    'can_download' => !$isPremium || $isPurchased,
+                    'is_authenticated' => (bool) $user,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error("checkTemplateAccess error: " . $e->getMessage());
+            return response()->json(['status' => false, 'message' => 'Failed to check template access.'], 500);
+        }
+    }
+
+    /**
+     * Purchase a premium template using wallet balance.
+     */
+    public function purchaseTemplate(Request $request)
+    {
+        try {
+            $request->validate([
+                'template_slug' => 'required|string',
+            ]);
+
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json(['status' => false, 'message' => 'Authentication required.'], 401);
+            }
+
+            $template = CvTemplate::where('slug', $request->template_slug)->firstOrFail();
+
+            if (!$template->is_premium || (float) $template->price <= 0) {
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Template is free.',
+                    'already_purchased' => true,
+                ]);
+            }
+
+            $wallet = \App\Models\Wallet::where('user_id', $user->id)->first();
+            if ($wallet) {
+                $alreadyPurchased = \App\Models\WalletTransaction::where('wallet_id', $wallet->id)
+                    ->where('reference_type', 'cv_template_purchase')
+                    ->where('description', "CV Template Purchase: {$template->name}")
+                    ->where('status', 'completed')
+                    ->exists();
+
+                if ($alreadyPurchased) {
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'Template already purchased.',
+                        'already_purchased' => true,
+                        'wallet_balance' => (float) $wallet->balance,
+                    ]);
+                }
+            }
+
+            $wallet = \App\Models\Wallet::where('user_id', $user->id)->lockForUpdate()->first();
+            if (!$wallet || (float) $wallet->balance < (float) $template->price) {
+                return response()->json([
+                    'status' => false,
+                    'requires_payment' => true,
+                    'price' => (float) $template->price,
+                    'wallet_balance' => (float) ($wallet ? $wallet->balance : 0),
+                    'deficit' => (float) max(0, $template->price - ($wallet ? $wallet->balance : 0)),
+                    'message' => 'Insufficient wallet balance.'
+                ], 402);
+            }
+
+            $wallet->debit(
+                $template->price,
+                'cv_template_purchase',
+                $template->id,
+                "CV Template Purchase: {$template->name}"
+            );
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Template purchased successfully!',
+                'wallet_balance' => (float) $wallet->balance,
+            ]);
+        } catch (\Exception $e) {
+            Log::error("purchaseTemplate error: " . $e->getMessage());
+            return response()->json(['status' => false, 'message' => 'Failed to complete template purchase.'], 500);
+        }
     }
 }
