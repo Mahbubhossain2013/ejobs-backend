@@ -79,6 +79,53 @@
                 </div>
             </div>
             @endif
+
+            @php
+                $teachPersonalInfo = [];
+                if(!empty($candidate['father_name'])) $teachPersonalInfo[] = ['label' => "Father's Name", 'val' => $candidate['father_name']];
+                if(!empty($candidate['mother_name'])) $teachPersonalInfo[] = ['label' => "Mother's Name", 'val' => $candidate['mother_name']];
+                if(!empty($candidate['dob'])) $teachPersonalInfo[] = ['label' => 'Date of Birth', 'val' => $candidate['dob']];
+                if(!empty($candidate['gender'])) $teachPersonalInfo[] = ['label' => 'Gender', 'val' => ucfirst($candidate['gender'])];
+                if(!empty($candidate['marital_status'])) $teachPersonalInfo[] = ['label' => 'Marital Status', 'val' => ucfirst($candidate['marital_status'])];
+                if(!empty($candidate['nationality'])) $teachPersonalInfo[] = ['label' => 'Nationality', 'val' => $candidate['nationality']];
+                if(!empty($candidate['religion'])) $teachPersonalInfo[] = ['label' => 'Religion', 'val' => $candidate['religion']];
+                if(!empty($candidate['blood_group'])) $teachPersonalInfo[] = ['label' => 'Blood Group', 'val' => $candidate['blood_group']];
+                if(!empty($candidate['nid'])) $teachPersonalInfo[] = ['label' => 'NID', 'val' => $candidate['nid']];
+            @endphp
+            @if(count($teachPersonalInfo) > 0)
+            <div>
+                <div class="sec-title-left">Personal Details</div>
+                <div class="card-white" style="font-size:8.5px;line-height:1.45;">
+                    @foreach($teachPersonalInfo as $pi)
+                    <div style="margin-bottom:2px;"><strong style="color:#0f766e;">{{ $pi['label'] }}:</strong> {{ $pi['val'] }}</div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
+            @if(!empty($languages) && count($languages) > 0)
+            <div>
+                <div class="sec-title-left">Languages</div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                    @foreach($languages as $l)
+                    @php $ln = is_array($l) ? ($l['name'] ?? $l['language'] ?? '') : $l; $lp = is_array($l) ? ($l['proficiency'] ?? $l['level'] ?? '') : ''; @endphp
+                    @if($ln)<span class="tag" style="background:#ccfbf1;color:#0f766e;">{{ $ln }} @if($lp)({{ $lp }})@endif</span>@endif
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
+            @if(!empty($hobbies) && count($hobbies) > 0)
+            <div>
+                <div class="sec-title-left">Interests</div>
+                <div>
+                    @foreach($hobbies as $h)
+                    @php $hn = is_array($h) ? ($h['name'] ?? reset($h)) : $h; @endphp
+                    @if($hn)<span class="tag" style="background:#fff;color:#0f766e;">{{ $hn }}</span>@endif
+                    @endforeach
+                </div>
+            </div>
+            @endif
         </div>
 
         <div class="right-col">
@@ -99,6 +146,57 @@
                     @endif
                 </div>
                 @endforeach
+            </div>
+            @endif
+
+            @if(!empty($projects) && count($projects) > 0)
+            <div>
+                <div class="sec-title-right">Key Projects</div>
+                @foreach($projects as $p)
+                <div class="card-white">
+                    <div class="card-head"><div>{{ $p['name'] ?? '' }}</div>@if(!empty($p['url']))<a href="{{ $p['url'] }}" target="_blank" style="font-size:8.5px;color:var(--coral);">Link</a>@endif</div>
+                    @if(!empty($p['description']))<div style="font-size:9px;color:#475569;margin-top:2px;">{{ $p['description'] }}</div>@endif
+                </div>
+                @endforeach
+            </div>
+            @endif
+
+            @if(!empty($certifications) && count($certifications) > 0)
+            <div>
+                <div class="sec-title-right">Certifications</div>
+                @foreach($certifications as $c)
+                <div class="card-white" style="margin-bottom:6px;">
+                    <div style="font-size:9.5px;font-weight:700;">{{ $c['name'] ?? '' }}</div>
+                    @if(!empty($c['issuer']))<div style="font-size:8.5px;color:var(--muted);">{{ $c['issuer'] }}</div>@endif
+                </div>
+                @endforeach
+            </div>
+            @endif
+
+            @if(!empty($training) && count($training) > 0)
+            <div>
+                <div class="sec-title-right">Training & Workshops</div>
+                @foreach($training as $t)
+                <div class="card-white" style="margin-bottom:6px;">
+                    <div class="card-head"><div>{{ $t['title'] ?? '' }}</div><div style="font-size:8.5px;color:var(--muted)">{{ $t['duration'] ?? '' }}</div></div>
+                    <div style="font-size:9px;color:var(--muted);">{{ $t['institute'] ?? $t['institution'] ?? '' }}</div>
+                </div>
+                @endforeach
+            </div>
+            @endif
+
+            @if(!empty($references) && count($references) > 0)
+            <div>
+                <div class="sec-title-right">References</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    @foreach($references as $r)
+                    <div class="card-white" style="font-size:8.5px;line-height:1.4;">
+                        <strong>{{ $r['name'] ?? '' }}</strong>
+                        @if(!empty($r['designation']))<div>{{ $r['designation'] }}{{ !empty($r['organization']) ? ', ' . $r['organization'] : '' }}</div>@endif
+                        @if(!empty($r['phone']))<div>📞 {{ $r['phone'] }}</div>@endif
+                    </div>
+                    @endforeach
+                </div>
             </div>
             @endif
         </div>

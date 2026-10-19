@@ -127,14 +127,16 @@ HTML;
                 @page { size: A4 portrait; margin: 0mm !important; }
                 @media print {
                     html, body { width: 210mm !important; height: 297mm !important; max-height: 297mm !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
-                    .cv-page { width: 210mm !important; height: 297mm !important; max-height: 297mm !important; min-height: 297mm !important; overflow: hidden !important; page-break-after: avoid !important; break-after: avoid !important; }
+                    .cv-page { width: 210mm !important; height: 297mm !important; max-height: 297mm !important; min-height: 297mm !important; overflow: hidden !important; page-break-after: avoid !important; break-after: avoid !important; page-break-before: avoid !important; break-before: avoid !important; }
+                    .left-col, .sidebar, .side, .col-left, .left-panel, aside, .right-col, .main, .main-content, .col-right, .body-wrap, .body-split, .columns-wrap { height: 100% !important; min-height: 297mm !important; align-self: stretch !important; }
                 }
-                body, .cv-page, .resume-page { font-size: 10px !important; line-height: 1.34 !important; }
-                p, li, .desc, .exp-desc, .details, .summary-text, .item-desc { font-size: 9.5px !important; line-height: 1.32 !important; }
-                .sec-title, .main-section-title, .sec-heading, .section-title, .side-title, .side-tab, .badge-title { font-size: 11.5px !important; margin-top: 6px !important; margin-bottom: 5px !important; padding-bottom: 2px !important; }
-                .hero, .header, .header-block, .profile-header { padding: 14px 20px !important; }
-                .left-col, .sidebar, .side, .col-left, .left-panel, aside, .right-col, .main, .main-content, .col-right { padding: 12px 16px !important; gap: 8px !important; }
-                .exp-item, .edu-item, .item-box, .entry-block, .card-box, .timeline-item { margin-bottom: 5px !important; padding-bottom: 3px !important; }
+                body, .cv-page, .resume-page { font-size: 9.5px !important; line-height: 1.32 !important; }
+                p, li, .desc, .exp-desc, .details, .summary-text, .item-desc { font-size: 9px !important; line-height: 1.3 !important; }
+                .sec-title, .main-section-title, .sec-heading, .section-title, .side-title, .side-tab, .badge-title { font-size: 11px !important; margin-top: 5px !important; margin-bottom: 4px !important; padding-bottom: 2px !important; }
+                .hero, .header, .header-block, .profile-header { padding: 12px 18px !important; }
+                .left-col, .sidebar, .side, .col-left, .left-panel, aside, .right-col, .main, .main-content, .col-right { padding: 10px 14px !important; gap: 7px !important; }
+                .exp-item, .edu-item, .item-box, .entry-block, .card-box, .timeline-item { margin-bottom: 4px !important; padding-bottom: 2px !important; }
+                .cv-signature-section, .signature-section, .signature-box { margin-top: 8px !important; padding-top: 3px !important; }
             ',
             2 => '
                 @page { size: A4 portrait; margin: 0mm !important; }
@@ -149,6 +151,7 @@ HTML;
                 .hero, .header, .header-block, .profile-header { padding: 24px 28px !important; }
                 .left-col, .sidebar, .side, .col-left, .left-panel, aside, .right-col, .main, .main-content, .col-right { padding: 18px 22px !important; gap: 14px !important; }
                 .exp-item, .edu-item, .item-box, .entry-block, .card-box, .timeline-item { margin-bottom: 12px !important; padding-bottom: 6px !important; }
+                .cv-signature-section, .signature-section, .signature-box { margin-top: 18px !important; padding-top: 6px !important; }
             ',
             3 => '
                 @page { size: A4 portrait; margin: 0mm !important; }
@@ -163,10 +166,47 @@ HTML;
                 .hero, .header, .header-block, .profile-header { padding: 30px 36px !important; }
                 .left-col, .sidebar, .side, .col-left, .left-panel, aside, .right-col, .main, .main-content, .col-right { padding: 24px 28px !important; gap: 20px !important; }
                 .exp-item, .edu-item, .item-box, .entry-block, .card-box, .timeline-item { margin-bottom: 18px !important; padding-bottom: 8px !important; }
+                .cv-signature-section, .signature-section, .signature-box { margin-top: 26px !important; padding-top: 8px !important; }
             ',
         };
 
-        $styleBlock = "<style id=\"cv-server-page-fit\">{$pageFitCss}\n.item-box,.exp-item,.edu-item,.skill-item,.signature-box,.cv-signature-section{page-break-inside:avoid!important;break-inside:avoid!important;}.sec-title,.section-title,.section-label{page-break-after:avoid!important;break-after:avoid!important;}</style>";
+        $autofitScript = <<<HTML
+<script id="cv-server-autofit">
+(function() {
+    function fitCvToPage() {
+        try {
+            var page = document.querySelector('.cv-page') || document.body;
+            if (!page) return;
+            var targetPages = {$pageCount};
+            var pxPerMm = (page.offsetWidth || 794) / 210;
+            var maxAllowedPx = Math.round(targetPages * 297 * pxPerMm);
+            var actualHeight = Math.max(page.scrollHeight, page.offsetHeight);
+            if (actualHeight > maxAllowedPx + 2) {
+                var ratio = (maxAllowedPx - 4) / actualHeight;
+                if (ratio >= 0.55 && ratio < 0.999) {
+                    page.style.transform = 'scale(' + ratio.toFixed(4) + ')';
+                    page.style.transformOrigin = 'top left';
+                    page.style.width = Math.round(100 / ratio) + '%';
+                }
+            }
+            // Ensure both columns stretch fully to the end of the page
+            var cols = document.querySelectorAll('.left-col, .sidebar, .side, .col-left, .left-panel, aside, .right-col, .main, .main-content, .col-right');
+            cols.forEach(function(c) {
+                c.style.alignSelf = 'stretch';
+                c.style.boxSizing = 'border-box';
+            });
+        } catch(e) {}
+    }
+    if (document.readyState === 'complete') {
+        setTimeout(fitCvToPage, 50);
+    } else {
+        window.addEventListener('load', function() { setTimeout(fitCvToPage, 50); });
+    }
+})();
+</script>
+HTML;
+
+        $styleBlock = "<style id=\"cv-server-page-fit\">{$pageFitCss}\n.cv-page{display:flex!important;align-items:stretch!important;box-sizing:border-box!important;}\n.left-col,.sidebar,.side,.col-left,.left-panel,aside,.right-col,.main,.main-content,.col-right{align-self:stretch!important;box-sizing:border-box!important;min-height:100%!important;}\n.item-box,.exp-item,.edu-item,.skill-item,.signature-box,.cv-signature-section{page-break-inside:avoid!important;break-inside:avoid!important;}.sec-title,.section-title,.section-label{page-break-after:avoid!important;break-after:avoid!important;}</style>\n{$autofitScript}";
 
         if (str_contains($html, '</head>')) {
             return str_replace('</head>', "{$styleBlock}\n</head>", $html);
@@ -176,16 +216,28 @@ HTML;
     }
 
     /**
-     * Inspects rendered template HTML and ensures that ANY section or personal field
-     * filled by the user that was omitted by the specific template design is
-     * seamlessly injected into the document flow before the signature.
+     * Inspects rendered template HTML and ensures that all information is balanced
+     * evenly between the sidebar and the main body in two-column templates,
+     * so that neither column is left empty or cut short.
      */
     public function ensureAllContentSections(string $html, array $viewData): string
     {
-        $appendedHtml = '';
-
-        // 1. Check Missing Personal Biographical Information
         $candidate = $viewData['candidate'] ?? [];
+
+        // Detect if this template features a sidebar / two-column layout
+        $hasSidebar = false;
+        $sidebarClasses = ['left-panel', 'left-col', 'sidebar', 'col-left', 'side', 'aside'];
+        foreach ($sidebarClasses as $cls) {
+            if (preg_match('/class="[^"]*\b' . preg_quote($cls, '/') . '\b[^"]*"/i', $html)) {
+                $hasSidebar = true;
+                break;
+            }
+        }
+        if (!$hasSidebar && (str_contains($html, '<aside') || str_contains($html, 'class="grid-2"'))) {
+            $hasSidebar = true;
+        }
+
+        // ── 1. Biographical / Personal Info ──
         $personalItems = [];
         if (!empty($candidate['father_name']) && !$this->htmlContainsValue($html, $candidate['father_name'])) {
             $personalItems[] = ['label' => "Father's Name / পিতার নাম", 'value' => $candidate['father_name']];
@@ -227,14 +279,31 @@ HTML;
             $personalItems[] = ['label' => 'Permanent Address / স্থায়ী ঠিকানা', 'value' => $candidate['permanent_address']];
         }
 
+        $sidebarPersonalHtml = '';
+        $mainPersonalHtml = '';
         if (!empty($personalItems)) {
+            // Sidebar version: vertical key-values tailored for sidebar width
+            $sidebarList = '';
+            foreach ($personalItems as $item) {
+                $lbl = htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8');
+                $val = htmlspecialchars($item['value'], ENT_QUOTES, 'UTF-8');
+                $sidebarList .= "<div style=\"margin-bottom: 5px; font-size: 9px; line-height: 1.35;\"><div style=\"font-weight: 700; opacity: 0.8;\">{$lbl}</div><div style=\"opacity: 0.95;\">{$val}</div></div>";
+            }
+            $sidebarPersonalHtml = <<<HTML
+<div class="cv-appended-section cv-sidebar-personal" style="margin-top: 14px; page-break-inside: avoid !important; break-inside: avoid !important;">
+    <div class="sec-title section-label side-title" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1.5px solid currentColor; opacity: 0.85; padding-bottom: 3px; margin-bottom: 8px;">Personal Details / তথ্যাবলী</div>
+    <div>{$sidebarList}</div>
+</div>
+HTML;
+
+            // Main body version: responsive grid
             $gridContent = '';
             foreach ($personalItems as $item) {
                 $lbl = htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8');
                 $val = htmlspecialchars($item['value'], ENT_QUOTES, 'UTF-8');
                 $gridContent .= "<div style=\"display: flex; gap: 6px; align-items: baseline;\"><strong style=\"color: #334155; min-width: 110px; font-weight: 600;\">{$lbl}:</strong><span style=\"color: #475569;\">{$val}</span></div>";
             }
-            $appendedHtml .= <<<HTML
+            $mainPersonalHtml = <<<HTML
 <div class="cv-appended-section cv-personal-details" style="margin-top: 14px; page-break-inside: avoid !important; break-inside: avoid !important;">
     <div class="sec-title section-label main-section-title" style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1.5px solid currentColor; opacity: 0.85; padding-bottom: 3px; margin-bottom: 8px;">Personal Information / ব্যক্তিগত তথ্যাবলী</div>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 5px 16px; font-size: 9.5px; line-height: 1.5;">
@@ -244,7 +313,8 @@ HTML;
 HTML;
         }
 
-        // 2. Check Missing Languages
+        // ── 2. Languages ──
+        $languagesHtml = '';
         $languages = $viewData['languages'] ?? [];
         if (!empty($languages) && !$this->htmlContainsItemName($html, $languages, ['name', 'language'])) {
             $langPills = '';
@@ -253,20 +323,21 @@ HTML;
                 $prof = htmlspecialchars(is_array($lang) ? ($lang['proficiency'] ?? $lang['level'] ?? '') : '', ENT_QUOTES, 'UTF-8');
                 $badge = $prof ? " <span style=\"opacity: 0.75; font-size: 8.5px;\">({$prof})</span>" : "";
                 if ($name) {
-                    $langPills .= "<span style=\"display: inline-block; font-size: 9.5px; padding: 2px 8px; background: rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.1); border-radius: 4px; margin-right: 4px; margin-bottom: 4px;\">{$name}{$badge}</span>";
+                    $langPills .= "<span style=\"display: inline-block; font-size: 9px; padding: 2px 7px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 4px; margin-right: 4px; margin-bottom: 4px;\">{$name}{$badge}</span>";
                 }
             }
             if ($langPills) {
-                $appendedHtml .= <<<HTML
+                $languagesHtml = <<<HTML
 <div class="cv-appended-section cv-languages-section" style="margin-top: 14px; page-break-inside: avoid !important; break-inside: avoid !important;">
-    <div class="sec-title section-label main-section-title" style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1.5px solid currentColor; opacity: 0.85; padding-bottom: 3px; margin-bottom: 8px;">Languages / ভাষা দক্ষতা</div>
+    <div class="sec-title section-label main-section-title side-title" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1.5px solid currentColor; opacity: 0.85; padding-bottom: 3px; margin-bottom: 8px;">Languages / ভাষা দক্ষতা</div>
     <div style="display: flex; flex-wrap: wrap; gap: 4px;">{$langPills}</div>
 </div>
 HTML;
             }
         }
 
-        // 3. Check Missing Certifications
+        // ── 3. Certifications ──
+        $certificationsHtml = '';
         $certifications = $viewData['certifications'] ?? [];
         if (!empty($certifications) && !$this->htmlContainsItemName($html, $certifications, ['name', 'title'])) {
             $certCards = '';
@@ -276,20 +347,21 @@ HTML;
                 $date = htmlspecialchars($cert['date'] ?? '', ENT_QUOTES, 'UTF-8');
                 if ($name) {
                     $sub = $issuer . ($date ? " ({$date})" : "");
-                    $certCards .= "<div style=\"margin-bottom: 6px; font-size: 10px;\"><strong style=\"color: #1e293b;\">{$name}</strong>" . ($sub ? "<div style=\"font-size: 9px; opacity: 0.8;\">{$sub}</div>" : "") . "</div>";
+                    $certCards .= "<div style=\"margin-bottom: 6px; font-size: 9.5px;\"><strong>{$name}</strong>" . ($sub ? "<div style=\"font-size: 8.5px; opacity: 0.8;\">{$sub}</div>" : "") . "</div>";
                 }
             }
             if ($certCards) {
-                $appendedHtml .= <<<HTML
+                $certificationsHtml = <<<HTML
 <div class="cv-appended-section cv-certifications-section" style="margin-top: 14px; page-break-inside: avoid !important; break-inside: avoid !important;">
-    <div class="sec-title section-label main-section-title" style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1.5px solid currentColor; opacity: 0.85; padding-bottom: 3px; margin-bottom: 8px;">Certifications / সনদপত্র</div>
+    <div class="sec-title section-label main-section-title side-title" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1.5px solid currentColor; opacity: 0.85; padding-bottom: 3px; margin-bottom: 8px;">Certifications / সনদপত্র</div>
     <div>{$certCards}</div>
 </div>
 HTML;
             }
         }
 
-        // 4. Check Missing Training & Courses
+        // ── 4. Training & Professional Courses ──
+        $trainingHtml = '';
         $training = $viewData['training'] ?? [];
         if (!empty($training) && !$this->htmlContainsItemName($html, $training, ['title', 'name'])) {
             $trainingCards = '';
@@ -303,7 +375,7 @@ HTML;
                 }
             }
             if ($trainingCards) {
-                $appendedHtml .= <<<HTML
+                $trainingHtml = <<<HTML
 <div class="cv-appended-section cv-training-section" style="margin-top: 14px; page-break-inside: avoid !important; break-inside: avoid !important;">
     <div class="sec-title section-label main-section-title" style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1.5px solid currentColor; opacity: 0.85; padding-bottom: 3px; margin-bottom: 8px;">Training & Professional Courses / প্রশিক্ষণ</div>
     <div>{$trainingCards}</div>
@@ -312,7 +384,8 @@ HTML;
             }
         }
 
-        // 5. Check Missing Projects
+        // ── 5. Key Projects ──
+        $projectsHtml = '';
         $projects = $viewData['projects'] ?? [];
         if (!empty($projects) && !$this->htmlContainsItemName($html, $projects, ['name', 'title'])) {
             $projCards = '';
@@ -326,7 +399,7 @@ HTML;
                 }
             }
             if ($projCards) {
-                $appendedHtml .= <<<HTML
+                $projectsHtml = <<<HTML
 <div class="cv-appended-section cv-projects-section" style="margin-top: 14px; page-break-inside: avoid !important; break-inside: avoid !important;">
     <div class="sec-title section-label main-section-title" style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1.5px solid currentColor; opacity: 0.85; padding-bottom: 3px; margin-bottom: 8px;">Key Projects / প্রকল্পসমূহ</div>
     <div>{$projCards}</div>
@@ -335,7 +408,8 @@ HTML;
             }
         }
 
-        // 6. Check Missing Awards & Achievements
+        // ── 6. Awards & Honors ──
+        $awardsHtml = '';
         $awards = $viewData['awards'] ?? [];
         if (!empty($awards) && !$this->htmlContainsItemName($html, $awards, ['name', 'title', 'description'])) {
             $awardList = '';
@@ -346,16 +420,17 @@ HTML;
                 }
             }
             if ($awardList) {
-                $appendedHtml .= <<<HTML
+                $awardsHtml = <<<HTML
 <div class="cv-appended-section cv-awards-section" style="margin-top: 14px; page-break-inside: avoid !important; break-inside: avoid !important;">
-    <div class="sec-title section-label main-section-title" style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1.5px solid currentColor; opacity: 0.85; padding-bottom: 3px; margin-bottom: 8px;">Honors & Awards / পুরস্কার ও স্বীকৃতি</div>
-    <ul style="padding-left: 18px; margin: 0; font-size: 9.5px; line-height: 1.5;">{$awardList}</ul>
+    <div class="sec-title section-label main-section-title side-title" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1.5px solid currentColor; opacity: 0.85; padding-bottom: 3px; margin-bottom: 8px;">Honors & Awards / পুরস্কার ও স্বীকৃতি</div>
+    <ul style="padding-left: 18px; margin: 0; font-size: 9px; line-height: 1.45;">{$awardList}</ul>
 </div>
 HTML;
             }
         }
 
-        // 7. Check Missing References
+        // ── 7. References ──
+        $referencesHtml = '';
         $references = $viewData['references'] ?? [];
         if (!empty($references) && !$this->htmlContainsItemName($html, $references, ['name'])) {
             $refCards = '';
@@ -368,43 +443,44 @@ HTML;
                 $rel = htmlspecialchars($r['relation'] ?? '', ENT_QUOTES, 'UTF-8');
                 if ($name) {
                     $contactLine = ($phone ? "📞 {$phone} " : "") . ($email ? "✉️ {$email}" : "");
-                    $refCards .= "<div style=\"padding: 6px 10px; background: rgba(0,0,0,0.02); border-left: 2.5px solid currentColor; font-size: 9.5px; line-height: 1.4;\"><strong style=\"color: #1e293b; font-size: 10.5px;\">{$name}</strong>" . ($desig ? "<div>{$desig}" . ($org ? ", {$org}" : "") . "</div>" : "") . ($rel ? "<div style=\"font-size: 8.5px; opacity: 0.7;\">Relation: {$rel}</div>" : "") . ($contactLine ? "<div style=\"font-size: 9px; opacity: 0.85; margin-top: 2px;\">{$contactLine}</div>" : "") . "</div>";
+                    $refCards .= "<div style=\"padding: 5px 8px; background: rgba(0,0,0,0.03); border-left: 2.5px solid currentColor; font-size: 9px; line-height: 1.35; margin-bottom: 4px;\"><strong style=\"font-size: 10px;\">{$name}</strong>" . ($desig ? "<div>{$desig}" . ($org ? ", {$org}" : "") . "</div>" : "") . ($rel ? "<div style=\"font-size: 8px; opacity: 0.7;\">Relation: {$rel}</div>" : "") . ($contactLine ? "<div style=\"font-size: 8.5px; opacity: 0.85; margin-top: 1px;\">{$contactLine}</div>" : "") . "</div>";
                 }
             }
             if ($refCards) {
-                $appendedHtml .= <<<HTML
+                $referencesHtml = <<<HTML
 <div class="cv-appended-section cv-references-section" style="margin-top: 14px; page-break-inside: avoid !important; break-inside: avoid !important;">
-    <div class="sec-title section-label main-section-title" style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1.5px solid currentColor; opacity: 0.85; padding-bottom: 3px; margin-bottom: 8px;">References / রেফারেন্স</div>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px;">{$refCards}</div>
+    <div class="sec-title section-label main-section-title side-title" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1.5px solid currentColor; opacity: 0.85; padding-bottom: 3px; margin-bottom: 8px;">References / রেফারেন্স</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 6px;">{$refCards}</div>
 </div>
 HTML;
             }
         }
 
-        // 8. Check Missing Hobbies & Interests
+        // ── 8. Hobbies & Interests ──
+        $hobbiesHtml = '';
         $hobbies = $viewData['hobbies'] ?? [];
         if (!empty($hobbies) && !$this->htmlContainsItemName($html, $hobbies, ['name'])) {
             $hobbyTags = '';
             foreach ($hobbies as $h) {
                 $name = htmlspecialchars(is_array($h) ? ($h['name'] ?? reset($h)) : (string)$h, ENT_QUOTES, 'UTF-8');
                 if ($name) {
-                    $hobbyTags .= "<span style=\"display: inline-block; font-size: 9.5px; padding: 2px 8px; background: rgba(0,0,0,0.04); border-radius: 4px; margin-right: 4px; margin-bottom: 4px;\">{$name}</span>";
+                    $hobbyTags .= "<span style=\"display: inline-block; font-size: 9px; padding: 2px 7px; background: rgba(0,0,0,0.05); border-radius: 4px; margin-right: 4px; margin-bottom: 4px;\">{$name}</span>";
                 }
             }
             if ($hobbyTags) {
-                $appendedHtml .= <<<HTML
+                $hobbiesHtml = <<<HTML
 <div class="cv-appended-section cv-hobbies-section" style="margin-top: 14px; page-break-inside: avoid !important; break-inside: avoid !important;">
-    <div class="sec-title section-label main-section-title" style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1.5px solid currentColor; opacity: 0.85; padding-bottom: 3px; margin-bottom: 8px;">Hobbies & Interests / শখ ও আগ্রহ</div>
+    <div class="sec-title section-label main-section-title side-title" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1.5px solid currentColor; opacity: 0.85; padding-bottom: 3px; margin-bottom: 8px;">Hobbies & Interests / শখ ও আগ্রহ</div>
     <div style="display: flex; flex-wrap: wrap; gap: 4px;">{$hobbyTags}</div>
 </div>
 HTML;
             }
         }
 
-        // 9. Check Missing Custom Sections
+        // ── 9. Custom Sections ──
+        $customBlocks = '';
         $customSections = $viewData['custom_sections'] ?? [];
         if (!empty($customSections)) {
-            $customBlocks = '';
             foreach ($customSections as $cs) {
                 $title = htmlspecialchars($cs['title'] ?? 'Additional Section', ENT_QUOTES, 'UTF-8');
                 $desc = nl2br(htmlspecialchars($cs['description'] ?? '', ENT_QUOTES, 'UTF-8'));
@@ -412,56 +488,96 @@ HTML;
                     $customBlocks .= <<<HTML
 <div class="cv-appended-section cv-custom-block" style="margin-top: 14px; page-break-inside: avoid !important; break-inside: avoid !important;">
     <div class="sec-title section-label main-section-title" style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1.5px solid currentColor; opacity: 0.85; padding-bottom: 3px; margin-bottom: 8px;">{$title}</div>
-    <div style="font-size: 10px; line-height: 1.55; opacity: 0.9;">{$desc}</div>
+    <div style="font-size: 9.5px; line-height: 1.5; opacity: 0.9;">{$desc}</div>
 </div>
 HTML;
                 }
             }
-            if ($customBlocks) {
-                $appendedHtml .= $customBlocks;
-            }
         }
 
-        // If nothing was missing, return raw HTML unmodified
-        if (empty(trim($appendedHtml))) {
+        // ── BALANCED DISTRIBUTION BETWEEN SIDEBAR AND MAIN BODY ──
+        if ($hasSidebar) {
+            // Sidebar receives: Personal Details, Languages, Certifications, Hobbies, Awards
+            $sidebarAppended = $sidebarPersonalHtml . $languagesHtml . $certificationsHtml . $hobbiesHtml . $awardsHtml;
+            // Main Body receives: Projects, Training, References, Custom Sections
+            $mainAppended = $projectsHtml . $trainingHtml . $referencesHtml . $customBlocks;
+
+            // If sidebar is still very short and main body is long, move references to sidebar
+            if (!empty($referencesHtml) && strlen($sidebarAppended) < 400 && strlen($mainAppended) > 1000) {
+                $sidebarAppended .= $referencesHtml;
+                $mainAppended = str_replace($referencesHtml, '', $mainAppended);
+            }
+
+            // Inject into Sidebar:
+            if (!empty(trim($sidebarAppended))) {
+                $sidebarInjected = false;
+                // Pattern A: Sidebar is the first column, followed by main column
+                if (preg_match('/(<\/div>\s*)(<div[^>]*class="[^"]*(?:right-panel|right-col|main-content|col-right|main\b)[^"]*")/i', $html, $matches, PREG_OFFSET_CAPTURE)) {
+                    $pos = $matches[1][1];
+                    $html = substr_replace($html, "\n{$sidebarAppended}\n", $pos, 0);
+                    $sidebarInjected = true;
+                }
+                // Pattern B: Sidebar on the right side (.side) right before outer closing divs
+                if (!$sidebarInjected) {
+                    if (preg_match('/(<div[^>]*class="[^"]*\b(?:side|sidebar|left-panel|left-col)\b[^"]*"[^>]*>[\s\S]*?)(<\/div>\s*<\/div>\s*<\/body>)/i', $html, $matches, PREG_OFFSET_CAPTURE)) {
+                        $pos = $matches[1][1] + strlen($matches[1][0]);
+                        $html = substr_replace($html, "\n{$sidebarAppended}\n", $pos, 0);
+                        $sidebarInjected = true;
+                    }
+                }
+                if (!$sidebarInjected) {
+                    $mainAppended = $sidebarAppended . $mainAppended;
+                }
+            }
+
+            // Inject into Main Body:
+            if (!empty(trim($mainAppended))) {
+                $mainInjected = false;
+                $mainPanelRegexes = [
+                    '/(<div[^>]*class="[^"]*(?:right-panel|right-col|main-content|col-right|main\b)[^"]*"[^>]*>[\s\S]*?)(<\/div>\s*<\/div>\s*<\/body>)/i',
+                    '/(<div[^>]*class="[^"]*(?:right-panel|right-col|main-content|col-right|main\b)[^"]*"[^>]*>[\s\S]*?)(<\/div>\s*<\/div>)/i',
+                    '/(<div[^>]*class="[^"]*(?:right-panel|right-col|main-content|col-right|main\b)[^"]*"[^>]*>[\s\S]*?)(<\/div>)/i',
+                ];
+                foreach ($mainPanelRegexes as $regex) {
+                    if (preg_match($regex, $html, $matches, PREG_OFFSET_CAPTURE)) {
+                        $pos = $matches[1][1] + strlen($matches[1][0]);
+                        $html = substr_replace($html, "\n{$mainAppended}\n", $pos, 0);
+                        $mainInjected = true;
+                        break;
+                    }
+                }
+                if (!$mainInjected && str_contains($html, '</body>')) {
+                    $html = str_replace('</body>', "{$mainAppended}\n</body>", $html);
+                }
+            }
+
             return $html;
         }
 
-        // Injection: Find where to place the appended sections:
-        // Try inside main content container right before its closing </div>
-        $injected = false;
-        $mainPanelRegexes = [
-            '/(<div[^>]*class="[^"]*(?:right-panel|right-col|main-content|col-right|main)[^"]*"[^>]*>[\s\S]*?)(<\/div>\s*<\/div>\s*<\/body>)/i',
-            '/(<div[^>]*class="[^"]*(?:right-panel|right-col|main-content|col-right|main)[^"]*"[^>]*>[\s\S]*?)(<\/div>\s*<\/div>)/i',
-        ];
-        foreach ($mainPanelRegexes as $regex) {
-            if (preg_match($regex, $html, $matches, PREG_OFFSET_CAPTURE)) {
-                $pos = $matches[1][1] + strlen($matches[1][0]);
-                $html = substr_replace($html, "{$appendedHtml}\n", $pos, 0);
-                $injected = true;
-                break;
-            }
+        // ── Single Column Mode (No Sidebar) ──
+        $allAppended = $mainPersonalHtml . $languagesHtml . $certificationsHtml . $trainingHtml . $projectsHtml . $awardsHtml . $referencesHtml . $hobbiesHtml . $customBlocks;
+
+        if (empty(trim($allAppended))) {
+            return $html;
         }
 
-        // Otherwise inject inside .cv-page before closing </div>
-        if (!$injected) {
-            if (preg_match('/((?:\s*<\/div>)+\s*<\/body>)/i', $html, $matches, PREG_OFFSET_CAPTURE)) {
-                $closingSeq = $matches[0][0];
-                $offset = $matches[0][1];
-                $divCount = preg_match_all('/<\/div>/i', $closingSeq);
-                if ($divCount >= 2) {
-                    $replacedSeq = preg_replace('/(<\/div>)/i', "{$appendedHtml}\n$1", $closingSeq, 1);
-                    $html = substr_replace($html, $replacedSeq, $offset, strlen($closingSeq));
-                } else {
-                    $replacedSeq = "{$appendedHtml}\n" . $closingSeq;
-                    $html = substr_replace($html, $replacedSeq, $offset, strlen($closingSeq));
-                }
-                $injected = true;
+        $injected = false;
+        if (preg_match('/((?:\s*<\/div>)+\s*<\/body>)/i', $html, $matches, PREG_OFFSET_CAPTURE)) {
+            $closingSeq = $matches[0][0];
+            $offset = $matches[0][1];
+            $divCount = preg_match_all('/<\/div>/i', $closingSeq);
+            if ($divCount >= 2) {
+                $replacedSeq = preg_replace('/(<\/div>)/i', "{$allAppended}\n$1", $closingSeq, 1);
+                $html = substr_replace($html, $replacedSeq, $offset, strlen($closingSeq));
+            } else {
+                $replacedSeq = "{$allAppended}\n" . $closingSeq;
+                $html = substr_replace($html, $replacedSeq, $offset, strlen($closingSeq));
             }
+            $injected = true;
         }
 
         if (!$injected && str_contains($html, '</body>')) {
-            $html = str_replace('</body>', "{$appendedHtml}\n</body>", $html);
+            $html = str_replace('</body>', "{$allAppended}\n</body>", $html);
         }
 
         return $html;
