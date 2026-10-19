@@ -15,6 +15,7 @@ class CvRenderingService
     public function render(CvTemplate $template, array $data, array $themeSettings = []): string
     {
         try {
+            $data = $this->normalizeData($data);
             $viewName = "cv_templates.{$template->slug}";
             $viewFile = str_replace('.', '/', $viewName);
             $viewPath = resource_path("views/{$viewFile}.blade.php");
@@ -79,7 +80,7 @@ class CvRenderingService
         }
 
         $signatureHtml = <<<HTML
-<div class="cv-signature-section" style="margin-top: 24px; padding-top: 8px; display: flex; justify-content: flex-end; page-break-inside: avoid !important; break-inside: avoid !important; width: 100%;">
+<div class="cv-signature-section" style="margin-top: auto !important; padding-top: 18px; display: flex; justify-content: flex-end; page-break-inside: avoid !important; break-inside: avoid !important; width: 100%;">
     <div style="text-align: center; min-width: 190px; display: inline-block;">
         {$sigGraphic}
         <div style="border-top: 1.5px solid #334155; width: 180px; margin: 0 auto 5px auto;"></div>
@@ -89,18 +90,22 @@ class CvRenderingService
 </div>
 HTML;
 
-        // Match the closing sequence at the very end of the file right before </body>
-        // This guarantees the signature is placed inside the content column at the very end of the document
-        // on the final page (page 1 if 1 page, page 2 if 2 pages, page 3 if 3 pages)
+        // Pattern 1: In two-column layout, inject at the end of the main column right before its closing </div>
+        $mainColRegex = '/(<div[^>]*class="[^"]*(?:right-panel|right-col|main-content|col-right|main\b)[^"]*"[^>]*>[\s\S]*?)(<\/div>\s*<\/div>\s*<\/body>)/i';
+        if (preg_match($mainColRegex, $html, $matches, PREG_OFFSET_CAPTURE)) {
+            $pos = $matches[1][1] + strlen($matches[1][0]);
+            return substr_replace($html, "\n{$signatureHtml}\n", $pos, 0);
+        }
+
+        // Pattern 2: Single column or general layout - place right before closing document body div
         if (preg_match('/((?:\s*<\/div>)+\s*<\/body>)/i', $html, $matches, PREG_OFFSET_CAPTURE)) {
             $closingSeq = $matches[0][0];
             $offset = $matches[0][1];
-            $divCount = preg_match_all('/<\/div>/i', $closingSeq);
-            if ($divCount >= 2) {
-                $replacedSeq = preg_replace('/(<\/div>)/i', "{$signatureHtml}\n$1", $closingSeq, 1);
-                return substr_replace($html, $replacedSeq, $offset, strlen($closingSeq));
-            } else {
-                $replacedSeq = "{$signatureHtml}\n" . $closingSeq;
+            $lastDivPos = strrpos($closingSeq, '</div>');
+            if ($lastDivPos !== false) {
+                $prevDivPos = strrpos(substr($closingSeq, 0, $lastDivPos), '</div>');
+                $targetPos = ($prevDivPos !== false) ? $prevDivPos : $lastDivPos;
+                $replacedSeq = substr_replace($closingSeq, "\n{$signatureHtml}\n", $targetPos, 0);
                 return substr_replace($html, $replacedSeq, $offset, strlen($closingSeq));
             }
         }
@@ -495,17 +500,121 @@ HTML;
             }
         }
 
-        // ── BALANCED DISTRIBUTION BETWEEN SIDEBAR AND MAIN BODY ──
+        // ── DYNAMICALLY BALANCED DISTRIBUTION BETWEEN SIDEBAR AND MAIN BODY ──
         if ($hasSidebar) {
-            // Sidebar receives: Personal Details, Languages, Certifications, Hobbies, Awards
-            $sidebarAppended = $sidebarPersonalHtml . $languagesHtml . $certificationsHtml . $hobbiesHtml . $awardsHtml;
-            // Main Body receives: Projects, Training, References, Custom Sections
-            $mainAppended = $projectsHtml . $trainingHtml . $referencesHtml . $customBlocks;
+            // Measure existing content in sidebar and main body to balance them evenly
+            $sidebarWeight = 0;
+            $mainWeight = 0;
 
-            // If sidebar is still very short and main body is long, move references to sidebar
-            if (!empty($referencesHtml) && strlen($sidebarAppended) < 400 && strlen($mainAppended) > 1000) {
-                $sidebarAppended .= $referencesHtml;
-                $mainAppended = str_replace($referencesHtml, '', $mainAppended);
+            if (preg_match('/<div[^>]*class="[^"]*\b(?:left-col|sidebar|side|col-left|left-panel)\b[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<div[^>]*class="[^"]*(?:right-panel|right-col|main-content|col-right|main)\b/i', $html, $sbMatch)) {
+                $sidebarWeight = mb_strlen(trim(strip_tags($sbMatch[1])));
+                if (str_contains($sbMatch[1], 'avatar') || str_contains($sbMatch[1], '<img')) {
+                    $sidebarWeight += 120;
+                }
+            } elseif (preg_match('/<div[^>]*class="[^"]*\b(?:left-col|sidebar|side|col-left|left-panel)\b[^"]*"[^>]*>([\s\S]*?)<\/div>/i', $html, $sbMatch)) {
+                $sidebarWeight = mb_strlen(trim(strip_tags($sbMatch[1])));
+                if (str_contains($sbMatch[1], 'avatar') || str_contains($sbMatch[1], '<img')) {
+                    $sidebarWeight += 120;
+                }
+            }
+
+            if (preg_match('/<div[^>]*class="[^"]*(?:right-panel|right-col|main-content|col-right|main)\b[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>\s*<\/body>/i', $html, $mainMatch)) {
+                $mainWeight = mb_strlen(trim(strip_tags($mainMatch[1])));
+            } elseif (preg_match('/<div[^>]*class="[^"]*(?:right-panel|right-col|main-content|col-right|main)\b[^"]*"[^>]*>([\s\S]*?)<\/div>/i', $html, $mainMatch)) {
+                $mainWeight = mb_strlen(trim(strip_tags($mainMatch[1])));
+            }
+
+            $sidebarAppended = '';
+            $mainAppended = '';
+
+            // 1. Personal Details:
+            // When main column is short, placing personal details in 2-column grid in main body balances the page!
+            if (!empty($personalItems)) {
+                if ($mainWeight < $sidebarWeight + 60) {
+                    $mainAppended .= "\n" . $mainPersonalHtml;
+                    $mainWeight += count($personalItems) * 20;
+                } else {
+                    $sidebarAppended .= "\n" . $sidebarPersonalHtml;
+                    $sidebarWeight += count($personalItems) * 20;
+                }
+            }
+
+            // 2. Training / Courses:
+            if (!empty($trainingHtml)) {
+                if ($mainWeight < $sidebarWeight + 100) {
+                    $mainAppended .= "\n" . $trainingHtml;
+                    $mainWeight += 50;
+                } else {
+                    $sidebarAppended .= "\n" . $trainingHtml;
+                    $sidebarWeight += 50;
+                }
+            }
+
+            // 3. Projects:
+            if (!empty($projectsHtml)) {
+                $mainAppended .= "\n" . $projectsHtml;
+                $mainWeight += 80;
+            }
+
+            // 4. Certifications:
+            if (!empty($certificationsHtml)) {
+                if ($sidebarWeight < $mainWeight) {
+                    $sidebarAppended .= "\n" . $certificationsHtml;
+                    $sidebarWeight += 40;
+                } else {
+                    $mainAppended .= "\n" . $certificationsHtml;
+                    $mainWeight += 40;
+                }
+            }
+
+            // 5. Languages:
+            if (!empty($languagesHtml)) {
+                if ($sidebarWeight <= $mainWeight + 80) {
+                    $sidebarAppended .= "\n" . $languagesHtml;
+                    $sidebarWeight += 30;
+                } else {
+                    $mainAppended .= "\n" . $languagesHtml;
+                    $mainWeight += 30;
+                }
+            }
+
+            // 6. Awards:
+            if (!empty($awardsHtml)) {
+                if ($mainWeight < $sidebarWeight) {
+                    $mainAppended .= "\n" . $awardsHtml;
+                    $mainWeight += 30;
+                } else {
+                    $sidebarAppended .= "\n" . $awardsHtml;
+                    $sidebarWeight += 30;
+                }
+            }
+
+            // 7. References:
+            if (!empty($referencesHtml)) {
+                if ($sidebarWeight < $mainWeight - 50) {
+                    $sidebarAppended .= "\n" . $referencesHtml;
+                    $sidebarWeight += 50;
+                } else {
+                    $mainAppended .= "\n" . $referencesHtml;
+                    $mainWeight += 50;
+                }
+            }
+
+            // 8. Hobbies:
+            if (!empty($hobbiesHtml)) {
+                if ($sidebarWeight <= $mainWeight + 50) {
+                    $sidebarAppended .= "\n" . $hobbiesHtml;
+                    $sidebarWeight += 20;
+                } else {
+                    $mainAppended .= "\n" . $hobbiesHtml;
+                    $mainWeight += 20;
+                }
+            }
+
+            // 9. Custom blocks:
+            if (!empty($customBlocks)) {
+                $mainAppended .= "\n" . $customBlocks;
+                $mainWeight += 50;
             }
 
             // Inject into Sidebar:
